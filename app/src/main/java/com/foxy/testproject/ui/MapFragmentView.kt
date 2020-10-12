@@ -1,9 +1,7 @@
 package com.foxy.testproject.ui
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
 import com.foxy.testproject.R
 import com.foxy.testproject.mvp.MapPresenter
@@ -34,8 +32,23 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setHasOptionsMenu(true)
         createMapFragment()
         initSearchButtons()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.map_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.item_locate -> {
+                presenter.locate(MapEngine.isInitialized())
+                true
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
     }
 
     override fun updateMap(map: Map) {
@@ -54,7 +67,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     }
 
     private fun initSearchButtons() {
-        btn_locate.setOnClickListener { presenter.locate(MapEngine.isInitialized()) }
         btn_cinema.setOnClickListener { presenter.search("Cinema", mapFragment.map?.center!!) }
     }
 
