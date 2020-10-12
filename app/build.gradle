@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 30
@@ -22,6 +23,15 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
     repositories {
         flatDir {
             dirs 'libs'
@@ -39,6 +49,12 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
 
     implementation(name:'HERE-sdk', ext:'aar')
+
+    // moxy
+    implementation "com.github.moxy-community:moxy:2.0.2"
+    kapt "com.github.moxy-community:moxy-compiler:2.0.2"
+    implementation "com.github.moxy-community:moxy-ktx:2.0.2"
+    implementation "com.github.moxy-community:moxy-androidx:2.0.2"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
