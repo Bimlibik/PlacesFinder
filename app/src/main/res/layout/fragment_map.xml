@@ -16,10 +16,10 @@
         android:id="@+id/drag_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
         android:background="@android:color/white"
         android:elevation="5dp"
-        app:layout_constraintBottom_toTopOf="@id/flexbox_layout"
+        android:gravity="center_horizontal"
+        app:layout_constraintBottom_toTopOf="@id/layout_search"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -27,6 +27,40 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_drag" />
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/layout_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@android:color/white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/flexbox_layout">
+
+        <EditText
+            android:id="@+id/field_request"
+            android:layout_width="0dp"
+            android:layout_weight="3"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/btn_search"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_search"
+            android:layout_gravity="center"/>
+
+        <ImageView
+            android:id="@+id/btn_clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_close"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+
     </LinearLayout>
 
     <com.google.android.flexbox.FlexboxLayout
@@ -37,45 +71,74 @@
         app:alignContent="stretch"
         app:alignItems="stretch"
         app:flexWrap="wrap"
-        app:justifyContent="center"
+        app:justifyContent="space_around"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <Button
-            android:id="@+id/btn_cinema"
+        <TextView
+            android:id="@+id/btn_eat_drink"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:elevation="2dp"
-            android:text="Cinema" />
+            android:layout_margin="8dp"
+            android:text="@string/tv_eat_drink"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_going_out"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_going_out"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_sights"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_sights"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_transport"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_transport"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_accommodation"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_accommodation"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_shopping"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_shopping"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_services"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_services"
+            app:drawableTopCompat="@drawable/circle" />
 
-        <Button
+        <TextView
+            android:id="@+id/btn_facilities"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/tv_facilities"
+            app:drawableTopCompat="@drawable/circle" />
 
     </com.google.android.flexbox.FlexboxLayout>
 

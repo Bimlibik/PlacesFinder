@@ -1,6 +1,5 @@
 package com.foxy.testproject.mvp
 
-import com.here.android.mpa.common.GeoCoordinate
 import com.here.android.mpa.mapping.Map
 import com.here.android.mpa.search.ErrorCode
 import moxy.MvpView
@@ -12,7 +11,13 @@ interface MapView : MvpView {
 
     fun updateMap(map: Map)
 
-    fun executeRequest(query: String, geoCoordinate: GeoCoordinate)
+    fun closeDialog()
 
     fun showError(errorCode: ErrorCode)
+
+    fun openDialog(categoriesId: String, requestsId: String, title: String)
+
+    fun showQuery(query: String)
+
+    fun clearQuery()
 }

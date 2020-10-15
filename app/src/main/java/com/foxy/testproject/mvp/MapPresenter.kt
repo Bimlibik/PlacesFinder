@@ -1,6 +1,6 @@
 package com.foxy.testproject.mvp
 
-import android.util.Log
+import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.R
 import com.here.android.mpa.common.*
 import com.here.android.mpa.mapping.Map
@@ -10,6 +10,7 @@ import com.here.android.mpa.search.*
 import moxy.InjectViewState
 import moxy.MvpPresenter
 import java.lang.ref.WeakReference
+import java.util.*
 
 @InjectViewState
 class MapPresenter : MvpPresenter<MapView>() {
@@ -23,13 +24,15 @@ class MapPresenter : MvpPresenter<MapView>() {
         .apply { emptyList<MapObject>() }
 
 
-    fun onEngineInitializationCompleted(error: OnEngineInitListener.Error) {
-        if (error == OnEngineInitListener.Error.NONE) {
-            initMap()
-            viewState.updateMap(map)
-        } else {
-            error.stackTrace
-        }
+    fun clear() {
+        clearMap()
+        viewState.clearQuery()
+    }
+
+    fun showMoreCategories(globalCategory: GlobalCategories, title: String) {
+        val categoriesId = globalCategory.toString().toLowerCase(Locale.ROOT)
+        val requestsId = "${categoriesId}_request"
+        viewState.openDialog(categoriesId, requestsId, title)
     }
 
     fun locate(isInitialized: Boolean) {
@@ -41,7 +44,44 @@ class MapPresenter : MvpPresenter<MapView>() {
         }
     }
 
-    fun computeResult(discoveryResultPage: DiscoveryResultPage?, errorCode: ErrorCode) {
+    fun searchByCategory(query: String, title: String, geoCoordinate: GeoCoordinate) {
+        clearMap()
+        viewState.closeDialog()
+        viewState.showQuery(title)
+
+        val filter = CategoryFilter().apply { add(query) }
+        val exploreRequest = ExploreRequest().apply {
+            setSearchCenter(geoCoordinate)
+            setCategoryFilter(filter)
+        }
+        exploreRequest.execute { discoveryResultPage, errorCode ->
+            computeResult(discoveryResultPage, errorCode)
+        }
+    }
+
+    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinate) {
+        if (query.isNotEmpty()) {
+            clearMap()
+
+            val searchRequest = SearchRequest(query).setSearchCenter(geoCoordinate)
+            searchRequest.execute { discoveryResultPage, errorCode ->
+                computeResult(discoveryResultPage, errorCode)
+            }
+
+            viewState.showQuery(query)
+        }
+    }
+
+    fun onEngineInitializationCompleted(error: OnEngineInitListener.Error) {
+        if (error == OnEngineInitListener.Error.NONE) {
+            initMap()
+            viewState.updateMap(map)
+        } else {
+            error.stackTrace
+        }
+    }
+
+    private fun computeResult(discoveryResultPage: DiscoveryResultPage?, errorCode: ErrorCode) {
         if (errorCode == ErrorCode.NONE) {
             if (discoveryResultPage != null) {
                 val items = discoveryResultPage.items
@@ -58,11 +98,6 @@ class MapPresenter : MvpPresenter<MapView>() {
         } else {
             viewState.showError(errorCode)
         }
-    }
-
-    fun search(query: String, geoCoordinate: GeoCoordinate) {
-        clearMap()
-        viewState.executeRequest(query, geoCoordinate)
     }
 
     private fun createMapObject(item: PlaceLink): MapMarker {
@@ -100,7 +135,6 @@ class MapPresenter : MvpPresenter<MapView>() {
                 geoPosition: GeoPosition?,
                 mapMatched: Boolean
             ) {
-                Log.i("TAG2", "onPositionUpdated:")
                 geoPosition?.let { position ->
                     currentCoordinate = position.coordinate
                     currentZoomLevel = (map.maxZoomLevel + map.minZoomLevel) / 2
@@ -110,8 +144,6 @@ class MapPresenter : MvpPresenter<MapView>() {
                     map.positionIndicator.isVisible = true
                     viewState.updateMap(map)
                     positionManager.stop()
-//                                currentGeoCoordinate = position.coordinate
-                    Log.i("TAG2", "onPositionUpdated: ${position.coordinate}")
                 }
             }
 
@@ -119,7 +151,7 @@ class MapPresenter : MvpPresenter<MapView>() {
                 p0: PositioningManager.LocationMethod?,
                 p1: PositioningManager.LocationStatus?
             ) {
-                Log.i("TAG2", "onPositionFixChanged")
+
             }
 
         })
