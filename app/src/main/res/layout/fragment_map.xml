@@ -6,11 +6,10 @@
     android:orientation="vertical"
     app:layoutDescription="@xml/fragment_map_scene">
 
-    <FrameLayout
+    <com.here.sdk.mapviewlite.MapViewLite
         android:id="@+id/map_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible" />
+        android:layout_height="match_parent" />
 
     <LinearLayout
         android:id="@+id/drag_layout"

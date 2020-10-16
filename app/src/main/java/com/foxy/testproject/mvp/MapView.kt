@@ -1,7 +1,9 @@
 package com.foxy.testproject.mvp
 
-import com.here.android.mpa.mapping.Map
-import com.here.android.mpa.search.ErrorCode
+
+import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.mapviewlite.MapCircle
+import com.here.sdk.mapviewlite.MapScene
 import moxy.MvpView
 import moxy.viewstate.strategy.AddToEndSingleStrategy
 import moxy.viewstate.strategy.StateStrategyType
@@ -9,11 +11,15 @@ import moxy.viewstate.strategy.StateStrategyType
 @StateStrategyType(value = AddToEndSingleStrategy::class)
 interface MapView : MvpView {
 
-    fun updateMap(map: Map)
+    fun updateMap(coordinates: GeoCoordinates, zoomLevel: Double)
+
+    fun updateMapCircle(oldMapCircle: MapCircle, newMapCircle: MapCircle)
+
+    fun startLocating()
 
     fun closeDialog()
 
-    fun showError(errorCode: ErrorCode)
+    fun showError(errorCode: MapScene.ErrorCode)
 
     fun openDialog(categoriesId: String, requestsId: String, title: String)
 

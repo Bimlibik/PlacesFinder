@@ -1,27 +1,32 @@
 package com.foxy.testproject.ui
 
+import android.Manifest
 import android.app.AlertDialog
+import android.content.Context.LOCATION_SERVICE
+import android.content.pm.PackageManager
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.foxy.testproject.GlobalCategories
+import com.foxy.testproject.PlatformPositioningProvider
 import com.foxy.testproject.R
 import com.foxy.testproject.mvp.MapPresenter
 import com.foxy.testproject.mvp.MapView
-import com.here.android.mpa.common.ApplicationContext
-import com.here.android.mpa.common.MapEngine
-import com.here.android.mpa.mapping.AndroidXMapFragment
-import com.here.android.mpa.mapping.Map
-import com.here.android.mpa.search.ErrorCode
+import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.core.Location
+import com.here.sdk.mapviewlite.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
 
-class MapFragmentView : MvpAppCompatFragment(), MapView {
+class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
 
-    private var mapFragment: AndroidXMapFragment = AndroidXMapFragment()
-
+    private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
+    private lateinit var platformPositioningProvider: PlatformPositioningProvider
 
     @InjectPresenter
     lateinit var presenter: MapPresenter
@@ -34,8 +39,10 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        platformPositioningProvider = PlatformPositioningProvider(requireContext())
         setHasOptionsMenu(true)
-        createMapFragment()
+        createMapView(savedInstanceState)
         initSearchButtons()
     }
 
@@ -46,22 +53,53 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.item_locate -> {
-                presenter.locate(MapEngine.isInitialized())
+                presenter.locate(platformPositioningProvider.isStarted())
                 true
             }
             else -> return super.onOptionsItemSelected(item)
         }
     }
 
-    override fun updateMap(map: Map) {
-        mapFragment.setMap(map)
+    override fun onPause() {
+        super.onPause()
+        mapView.onPause()
+        platformPositioningProvider.stopLocating()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+        startLocating()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView.onDestroy()
+    }
+
+    override fun updateMap(coordinates: GeoCoordinates, zoomLevel: Double) {
+        mapView.camera.target = coordinates
+        mapView.camera.zoomLevel = zoomLevel
+    }
+
+    override fun updateMapCircle(oldMapCircle: MapCircle, newMapCircle: MapCircle) {
+        mapView.mapScene.removeMapCircle(oldMapCircle)
+        mapView.mapScene.addMapCircle(newMapCircle)
+    }
+
+    override fun startLocating() {
+        platformPositioningProvider.startLocating(object : PlatformPositioningProvider.PlatformLocationListener {
+            override fun onLocationUpdated(location: android.location.Location?) {
+                presenter.saveLocation(location)
+            }
+        })
     }
 
     override fun closeDialog() {
         dialog.dismiss()
     }
 
-    override fun showError(errorCode: ErrorCode) {
+    override fun showError(errorCode: MapScene.ErrorCode) {
         Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
     }
 
@@ -75,11 +113,11 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle(title)
             setItems(categories) { _, which ->
-                presenter.searchByCategory(
-                    requests[which],
-                    categories[which],
-                    mapFragment.map?.center!!
-                )
+//                presenter.searchByCategory(
+//                    requests[which],
+//                    categories[which],
+//                    mapFragment.map?.center!!
+//                )
             }
             create()
         }.show()
@@ -147,26 +185,30 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
             )
         }
         btn_search.setOnClickListener {
-            presenter.searchByKeyword(
-                field_request.text.toString(),
-                mapFragment.map?.center!!
-            )
+//            presenter.searchByKeyword(
+//                field_request.text.toString(),
+//                mapFragment.map?.center!!
+//            )
         }
 
         btn_clear.setOnClickListener { presenter.clear() }
     }
 
-    private fun initMapEngine() {
-        mapFragment.init(ApplicationContext(requireContext())) { error ->
-            presenter.onEngineInitializationCompleted(error)
+    private fun initMapScene() {
+        mapView.mapScene.loadScene(MapStyle.NORMAL_DAY) { errorCode ->
+            presenter.onMapSceneInitializationCompleted(errorCode)
         }
     }
 
-    private fun createMapFragment() {
-        childFragmentManager.beginTransaction()
-            .add(R.id.map_view, mapFragment)
-            .commit()
-        initMapEngine()
+    private fun createMapView(savedInstanceState: Bundle?) {
+        mapView = requireActivity().findViewById(R.id.map_view)
+        mapView.onCreate(savedInstanceState)
+        initMapScene()
     }
+
+    override fun onLocationChanged(location: android.location.Location) {
+        Toast.makeText(requireContext(), "Location: ${location.latitude}, ${location.longitude}", Toast.LENGTH_LONG).show()
+    }
+
 
 }

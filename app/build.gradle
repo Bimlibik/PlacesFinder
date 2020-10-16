@@ -40,7 +40,7 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation fileTree(dir: "libs", include: ['*.jar', '*.aar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.3.2'
     implementation 'androidx.appcompat:appcompat:1.2.0'
@@ -49,7 +49,7 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.6'
 
-    implementation(name:'HERE-sdk', ext:'aar')
+//    implementation(name:'HERE-sdk', ext:'aar')
 
     // moxy
     implementation "com.github.moxy-community:moxy:2.0.2"
