@@ -1,9 +1,11 @@
 package com.foxy.testproject.mvp
 
+import android.graphics.Color
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.R
 import com.here.android.mpa.common.*
 import com.here.android.mpa.mapping.Map
+import com.here.android.mpa.mapping.MapCircle
 import com.here.android.mpa.mapping.MapMarker
 import com.here.android.mpa.mapping.MapObject
 import com.here.android.mpa.search.*
@@ -22,6 +24,8 @@ class MapPresenter : MvpPresenter<MapView>() {
 
     private var mapObjects = mutableListOf<MapObject>()
         .apply { emptyList<MapObject>() }
+
+    private lateinit var circle: MapCircle
 
 
     fun clear() {
@@ -75,6 +79,7 @@ class MapPresenter : MvpPresenter<MapView>() {
     fun onEngineInitializationCompleted(error: OnEngineInitListener.Error) {
         if (error == OnEngineInitListener.Error.NONE) {
             initMap()
+            locate(true)
             viewState.updateMap(map)
         } else {
             error.stackTrace
@@ -107,11 +112,31 @@ class MapPresenter : MvpPresenter<MapView>() {
         return mapObject
     }
 
+    private fun createCircle(): MapCircle {
+        val newCircle = MapCircle(500.0, currentCoordinate).apply {
+            lineColor = Color.GRAY
+            fillColor = Color.TRANSPARENT
+            lineWidth = 12
+        }
+        circle = newCircle
+        return newCircle
+    }
+
     private fun clearMap() {
         if (mapObjects.isNotEmpty()) {
-            map.removeAllMapObjects()
+            map.removeMapObjects(mapObjects)
             mapObjects.clear()
             viewState.updateMap(map)
+        }
+    }
+
+    private fun setupMap(posIndicatorShown: Boolean) {
+        map.apply {
+            setCenter(currentCoordinate, Map.Animation.NONE)
+            zoomLevel = currentZoomLevel
+            projectionMode = Map.Projection.MERCATOR
+            map.positionIndicator.isVisible = posIndicatorShown
+            addMapObject(createCircle())
         }
     }
 
@@ -121,11 +146,7 @@ class MapPresenter : MvpPresenter<MapView>() {
             currentCoordinate = GeoCoordinate(0.0, 0.0, 0.0)
         }
 
-        map.apply {
-            setCenter(currentCoordinate, Map.Animation.NONE)
-            zoomLevel = currentZoomLevel
-            projectionMode = Map.Projection.MERCATOR
-        }
+        setupMap(false)
     }
 
     private fun setupPositioningListener(): WeakReference<PositioningManager.OnPositionChangedListener> =
@@ -135,13 +156,12 @@ class MapPresenter : MvpPresenter<MapView>() {
                 geoPosition: GeoPosition?,
                 mapMatched: Boolean
             ) {
+                map.removeMapObject(circle)
+
                 geoPosition?.let { position ->
                     currentCoordinate = position.coordinate
-                    currentZoomLevel = (map.maxZoomLevel + map.minZoomLevel) / 2
-
-                    map.setCenter(currentCoordinate, Map.Animation.NONE)
-                    map.zoomLevel = currentZoomLevel
-                    map.positionIndicator.isVisible = true
+                    currentZoomLevel = CUSTOM_ZOOM_LEVEL
+                    setupMap(true)
                     viewState.updateMap(map)
                     positionManager.stop()
                 }
@@ -156,3 +176,5 @@ class MapPresenter : MvpPresenter<MapView>() {
 
         })
 }
+
+private const val CUSTOM_ZOOM_LEVEL = 15.0
