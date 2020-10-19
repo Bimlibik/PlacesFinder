@@ -11,6 +11,7 @@ import com.here.sdk.search.SearchOptions
 import com.here.sdk.search.TextQuery
 import moxy.MvpView
 import moxy.viewstate.strategy.AddToEndSingleStrategy
+import moxy.viewstate.strategy.AddToEndStrategy
 import moxy.viewstate.strategy.StateStrategyType
 
 @StateStrategyType(value = AddToEndSingleStrategy::class)
@@ -22,12 +23,10 @@ interface MapView : MvpView {
 
     fun startLocating()
 
-    fun startSearching(categoryQuery: CategoryQuery, searchOptions: SearchOptions)
+    @StateStrategyType(value = AddToEndStrategy::class)
+    fun addMarkerToMap(marker: MapMarker, newScale: Float)
 
-    fun startSearching(textQuery: TextQuery, searchOptions: SearchOptions)
-
-    fun addMarkerToMap(marker: MapMarker)
-
+    @StateStrategyType(value = AddToEndStrategy::class)
     fun removeMarkers(marker: MapMarker)
 
     fun closeDialog()

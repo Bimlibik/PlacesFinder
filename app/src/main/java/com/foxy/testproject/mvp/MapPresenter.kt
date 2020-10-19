@@ -18,6 +18,7 @@ import moxy.MvpPresenter
 @InjectViewState
 class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter<MapView>() {
 
+    private lateinit var searchEngine: SearchEngine
     private var currentCoordinates: GeoCoordinates = GeoCoordinates(0.0, 0.0)
     private var currentZoomLevel: Double = 0.0
 
@@ -34,6 +35,7 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
         loadCategories()
+        searchEngine = SearchEngine()
     }
 
 
@@ -62,16 +64,20 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
     fun saveLocation(location: Location?) {
         location?.let {
             currentCoordinates = GeoCoordinates(location.latitude, location.longitude)
-            currentZoomLevel = CUSTOM_ZOOM_LEVEL
+            currentZoomLevel = DEFAULT_ZOOM_LEVEL
             viewState.updateMap(currentCoordinates, currentZoomLevel)
         }
     }
 
     fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
+        clearMap()
         val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
         val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+        searchEngine.search(categoryQuery, searchOptions) { error, result ->
+            computeResult(error, result)
+        }
+
         viewState.closeDialog()
-        viewState.startSearching(categoryQuery, searchOptions)
         viewState.showQuery(query.name)
     }
 
@@ -80,35 +86,17 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
             clearMap()
             val textQuery = TextQuery(query, geoCoordinate)
             val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
-            viewState.startSearching(textQuery, searchOptions)
+            searchEngine.search(textQuery, searchOptions) { error, result ->
+                computeResult(error, result)
+            }
             viewState.showQuery(query)
         }
-    }
-
-    fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
-        if (searchError != null) {
-            Log.i("TAG2", "computeResult: Search Error: $searchError")
-            return
-        }
-
-        if (result != null && result.isNotEmpty()) {
-            places = result
-            clearMap()
-
-            for (place in result) {
-                place.geoCoordinates?.let {
-                    viewState.addMarkerToMap(createMarker(it))
-                }
-                Log.i("Place", "Place: title - ${place.title}")
-            }
-        }
-
     }
 
     fun onMapSceneInitializationCompleted(errorCode: MapScene.ErrorCode?) {
         if (errorCode == null) {
             viewState.updateMap(currentCoordinates, currentZoomLevel)
-            val newCircle = createMapCircle(currentCoordinates, 500f)
+            val newCircle = createMapCircle(currentCoordinates, DEFAULT_RADIUS)
             if (this::circle.isInitialized) {
                 viewState.updateMapCircle(circle, newCircle)
             } else {
@@ -118,6 +106,25 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         } else {
             viewState.showError(errorCode)
         }
+    }
+
+    private fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
+        if (searchError != null) {
+            Log.i("TAG2", "computeResult: Search Error: $searchError")
+            return
+        }
+
+        if (result != null && result.isNotEmpty()) {
+            places = result
+
+            for (place in result) {
+                place.geoCoordinates?.let {
+                    viewState.addMarkerToMap(createMarker(it), DEFAULT_IMG_SCALE)
+                }
+                Log.i("Place", "Place: title - ${place.title}")
+            }
+        }
+
     }
 
     private fun createMapCircle(coordinates: GeoCoordinates, radius: Float): MapCircle {
@@ -149,7 +156,7 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
 
 }
 
-private const val CUSTOM_ZOOM_LEVEL = 15.0
+private const val DEFAULT_ZOOM_LEVEL = 15.0
+private const val DEFAULT_RADIUS = 500f
+private const val DEFAULT_IMG_SCALE = 0.5f
 private const val MAX_SEARCH_RESULT = 30
-
-private const val LOCATION_UPDATE_INTERVAL_IN_MS = 10000L

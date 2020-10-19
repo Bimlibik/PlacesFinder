@@ -14,7 +14,6 @@ import com.foxy.testproject.mvp.MapView
 import com.foxy.testproject.utils.InjectorUtils
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.mapviewlite.*
-import com.here.sdk.search.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
@@ -25,7 +24,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
     private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
     private lateinit var platformPositioningProvider: PlatformPositioningProvider
-    private lateinit var searchEngine: SearchEngine
 
     @InjectPresenter
     lateinit var presenter: MapPresenter
@@ -44,7 +42,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         super.onViewCreated(view, savedInstanceState)
 
         platformPositioningProvider = PlatformPositioningProvider(requireContext())
-        searchEngine = SearchEngine()
         setHasOptionsMenu(true)
         createMapView(savedInstanceState)
         initSearchButtons()
@@ -100,20 +97,10 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         })
     }
 
-    override fun startSearching(categoryQuery: CategoryQuery, searchOptions: SearchOptions) {
-        searchEngine.search(categoryQuery, searchOptions) { searchError, result ->
-            presenter.computeResult(searchError, result) }
-    }
-
-    override fun startSearching(textQuery: TextQuery, searchOptions: SearchOptions) {
-        searchEngine.search(textQuery, searchOptions) { searchError, result ->
-            presenter.computeResult(searchError, result)
-        }
-    }
-
-    override fun addMarkerToMap(marker: MapMarker) {
+    override fun addMarkerToMap(marker: MapMarker, newScale: Float) {
         val img = MapImageFactory.fromResource(resources, R.drawable.marker)
-        marker.addImage(img, MapMarkerImageStyle())
+        val style = MapMarkerImageStyle().apply { scale = newScale }
+        marker.addImage(img, style)
         mapView.mapScene.addMapMarker(marker)
     }
 
@@ -144,6 +131,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
 
     override fun showQuery(query: String) {
         field_request.setText(query)
+        field_request.setSelection(query.length)
         btn_search.visibility = View.GONE
         btn_clear.visibility = View.VISIBLE
     }
