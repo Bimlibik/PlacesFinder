@@ -105,6 +105,12 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
             presenter.computeResult(searchError, result) }
     }
 
+    override fun startSearching(textQuery: TextQuery, searchOptions: SearchOptions) {
+        searchEngine.search(textQuery, searchOptions) { searchError, result ->
+            presenter.computeResult(searchError, result)
+        }
+    }
+
     override fun addMarkerToMap(marker: MapMarker) {
         val img = MapImageFactory.fromResource(resources, R.drawable.marker)
         marker.addImage(img, MapMarkerImageStyle())
@@ -198,10 +204,10 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
             )
         }
         btn_search.setOnClickListener {
-//            presenter.searchByKeyword(
-//                field_request.text.toString(),
-//                mapFragment.map?.center!!
-//            )
+            presenter.searchByKeyword(
+                field_request.text.toString(),
+                mapView.camera.target
+            )
         }
 
         btn_clear.setOnClickListener { presenter.clear() }

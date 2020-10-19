@@ -11,12 +11,9 @@ import com.here.sdk.core.LanguageCode
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-
 import moxy.InjectViewState
 import moxy.MvpPresenter
-import java.util.*
 
 @InjectViewState
 class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter<MapView>() {
@@ -38,8 +35,6 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         super.onFirstViewAttach()
         loadCategories()
     }
-
-
 
 
     fun clear() {
@@ -75,22 +70,40 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
     fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
         val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
         val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+        viewState.closeDialog()
         viewState.startSearching(categoryQuery, searchOptions)
         viewState.showQuery(query.name)
     }
 
-//    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinate) {
-//        if (query.isNotEmpty()) {
-//            clearMap()
-//
-//            val searchRequest = SearchRequest(query).setSearchCenter(geoCoordinate)
-//            searchRequest.execute { discoveryResultPage, errorCode ->
-//                computeResult(discoveryResultPage, errorCode)
-//            }
-//
-//            viewState.showQuery(query)
-//        }
-//    }
+    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinates) {
+        if (query.isNotEmpty()) {
+            clearMap()
+            val textQuery = TextQuery(query, geoCoordinate)
+            val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+            viewState.startSearching(textQuery, searchOptions)
+            viewState.showQuery(query)
+        }
+    }
+
+    fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
+        if (searchError != null) {
+            Log.i("TAG2", "computeResult: Search Error: $searchError")
+            return
+        }
+
+        if (result != null && result.isNotEmpty()) {
+            places = result
+            clearMap()
+
+            for (place in result) {
+                place.geoCoordinates?.let {
+                    viewState.addMarkerToMap(createMarker(it))
+                }
+                Log.i("Place", "Place: title - ${place.title}")
+            }
+        }
+
+    }
 
     fun onMapSceneInitializationCompleted(errorCode: MapScene.ErrorCode?) {
         if (errorCode == null) {
@@ -114,40 +127,11 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         return MapCircle(geoCircle, circleStyle)
     }
 
-    fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
-        if (searchError != null) {
-            Log.i("TAG2", "computeResult: Search Error: $searchError")
-            return
-        }
-
-        if (result != null && result.isNotEmpty()) {
-            places = result
-            clearMap()
-
-            for (place in result) {
-                place.geoCoordinates?.let {
-                    val mapMarker = MapMarker(it)
-                    mapObjects.add(mapMarker)
-                    viewState.addMarkerToMap(mapMarker)
-                }
-                Log.i("Place", "Place: title - ${place.title}")
-            }
-        }
-
+    private fun createMarker(geoCoordinate: GeoCoordinates): MapMarker {
+        val mapObject = MapMarker(geoCoordinate)
+        mapObjects.add(mapObject)
+        return mapObject
     }
-
-    private fun loadCategories() = GlobalScope.launch {
-        categories = repository.getCategories()
-    }
-
-//    private fun createMapObject(item: PlaceLink): MapMarker {
-//        val img = Image().apply { setImageResource(R.drawable.marker) }
-//        val mapObject = MapMarker(item.position!!, img)
-//        mapObjects.add(mapObject)
-//        return mapObject
-//    }
-//
-
 
     private fun clearMap() {
         if (mapObjects.isNotEmpty()) {
@@ -155,7 +139,12 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
                 viewState.removeMarkers(it)
             }
             mapObjects.clear()
+            places.clear()
         }
+    }
+
+    private fun loadCategories() = GlobalScope.launch {
+        categories = repository.getCategories()
     }
 
 }
