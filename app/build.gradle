@@ -46,10 +46,13 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.2'
     implementation 'com.google.android:flexbox:2.0.1'
+    implementation 'androidx.room:room-runtime:2.2.5'
+    kapt "androidx.room:room-compiler:2.2.5"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9"
+    implementation "androidx.work:work-runtime-ktx:2.4.0"
 
     implementation 'com.google.code.gson:gson:2.8.6'
-
-//    implementation(name:'HERE-sdk', ext:'aar')
 
     // moxy
     implementation "com.github.moxy-community:moxy:2.0.2"

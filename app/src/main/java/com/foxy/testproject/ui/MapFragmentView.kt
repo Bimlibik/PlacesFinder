@@ -1,35 +1,38 @@
 package com.foxy.testproject.ui
 
-import android.Manifest
 import android.app.AlertDialog
-import android.content.Context.LOCATION_SERVICE
-import android.content.pm.PackageManager
 import android.location.LocationListener
-import android.location.LocationManager
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.PlatformPositioningProvider
 import com.foxy.testproject.R
+import com.foxy.testproject.data.Category
 import com.foxy.testproject.mvp.MapPresenter
 import com.foxy.testproject.mvp.MapView
+import com.foxy.testproject.utils.InjectorUtils
 import com.here.sdk.core.GeoCoordinates
-import com.here.sdk.core.Location
 import com.here.sdk.mapviewlite.*
+import com.here.sdk.search.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
+import moxy.presenter.ProvidePresenter
 
 class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
 
     private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
     private lateinit var platformPositioningProvider: PlatformPositioningProvider
+    private lateinit var searchEngine: SearchEngine
 
     @InjectPresenter
     lateinit var presenter: MapPresenter
+
+    @ProvidePresenter
+    fun providePresenter(): MapPresenter =
+        MapPresenter(InjectorUtils.getCategoriesRepository())
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,6 +44,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         super.onViewCreated(view, savedInstanceState)
 
         platformPositioningProvider = PlatformPositioningProvider(requireContext())
+        searchEngine = SearchEngine()
         setHasOptionsMenu(true)
         createMapView(savedInstanceState)
         initSearchButtons()
@@ -88,11 +92,27 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
     }
 
     override fun startLocating() {
-        platformPositioningProvider.startLocating(object : PlatformPositioningProvider.PlatformLocationListener {
+        platformPositioningProvider.startLocating(object :
+            PlatformPositioningProvider.PlatformLocationListener {
             override fun onLocationUpdated(location: android.location.Location?) {
                 presenter.saveLocation(location)
             }
         })
+    }
+
+    override fun startSearching(categoryQuery: CategoryQuery, searchOptions: SearchOptions) {
+        searchEngine.search(categoryQuery, searchOptions) { searchError, result ->
+            presenter.computeResult(searchError, result) }
+    }
+
+    override fun addMarkerToMap(marker: MapMarker) {
+        val img = MapImageFactory.fromResource(resources, R.drawable.marker)
+        marker.addImage(img, MapMarkerImageStyle())
+        mapView.mapScene.addMapMarker(marker)
+    }
+
+    override fun removeMarkers(marker: MapMarker) {
+        mapView.mapScene.removeMapMarker(marker)
     }
 
     override fun closeDialog() {
@@ -103,21 +123,14 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
     }
 
-    override fun openDialog(categoriesId: String, requestsId: String, title: String) {
-        val categoriesResId =
-            resources.getIdentifier(categoriesId, "array", requireContext().packageName)
-        val requestResId =
-            resources.getIdentifier(requestsId, "array", requireContext().packageName)
-        val categories = resources.getStringArray(categoriesResId)
-        val requests = resources.getStringArray(requestResId)
+    override fun openDialog(title: String, categories: List<Category>, titles: List<String>) {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle(title)
-            setItems(categories) { _, which ->
-//                presenter.searchByCategory(
-//                    requests[which],
-//                    categories[which],
-//                    mapFragment.map?.center!!
-//                )
+            setItems(titles.toTypedArray()) { _, which ->
+                presenter.searchByCategory(
+                    categories[which],
+                    mapView.camera.target
+                )
             }
             create()
         }.show()
@@ -207,7 +220,11 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
     }
 
     override fun onLocationChanged(location: android.location.Location) {
-        Toast.makeText(requireContext(), "Location: ${location.latitude}, ${location.longitude}", Toast.LENGTH_LONG).show()
+        Toast.makeText(
+            requireContext(),
+            "Location: ${location.latitude}, ${location.longitude}",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
 

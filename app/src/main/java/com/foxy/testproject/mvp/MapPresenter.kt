@@ -1,39 +1,62 @@
 package com.foxy.testproject.mvp
 
 import android.location.Location
+import android.util.Log
 import com.foxy.testproject.GlobalCategories
+import com.foxy.testproject.data.Category
+import com.foxy.testproject.data.ICategoriesRepository
 import com.here.sdk.core.GeoCircle
 import com.here.sdk.core.GeoCoordinates
-import com.here.sdk.mapviewlite.MapCircle
-import com.here.sdk.mapviewlite.MapCircleStyle
-import com.here.sdk.mapviewlite.MapScene
-import com.here.sdk.mapviewlite.PixelFormat
+import com.here.sdk.core.LanguageCode
+import com.here.sdk.mapviewlite.*
+import com.here.sdk.search.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 import moxy.InjectViewState
 import moxy.MvpPresenter
 import java.util.*
 
 @InjectViewState
-class MapPresenter : MvpPresenter<MapView>() {
+class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter<MapView>() {
 
     private var currentCoordinates: GeoCoordinates = GeoCoordinates(0.0, 0.0)
     private var currentZoomLevel: Double = 0.0
 
-//    private var mapObjects = mutableListOf<MapObject>()
-//        .apply { emptyList<MapObject>() }
+    private var categories: List<Category> = mutableListOf()
+
+    private var places = mutableListOf<Place>()
+        .apply { emptyList<Place>() }
+
+    private var mapObjects = mutableListOf<MapMarker>()
+        .apply { emptyList<MapMarker>() }
 
     private lateinit var circle: MapCircle
 
+    override fun onFirstViewAttach() {
+        super.onFirstViewAttach()
+        loadCategories()
+    }
+
+
+
 
     fun clear() {
-//        clearMap()
+        clearMap()
         viewState.clearQuery()
     }
 
     fun showMoreCategories(globalCategory: GlobalCategories, title: String) {
-        val categoriesId = globalCategory.toString().toLowerCase(Locale.ROOT)
-        val requestsId = "${categoriesId}_request"
-        viewState.openDialog(categoriesId, requestsId, title)
+        val groupCategories = mutableListOf<Category>()
+        val titles = arrayListOf<String>()
+        for (category in categories) {
+            if (category.groupId == globalCategory.id) {
+                groupCategories.add(category)
+                titles.add(category.name)
+            }
+        }
+        viewState.openDialog(title, groupCategories, titles)
     }
 
     fun locate(isStarted: Boolean) {
@@ -49,20 +72,12 @@ class MapPresenter : MvpPresenter<MapView>() {
         }
     }
 
-//    fun searchByCategory(query: String, title: String, geoCoordinate: GeoCoordinate) {
-//        clearMap()
-//        viewState.closeDialog()
-//        viewState.showQuery(title)
-//
-//        val filter = CategoryFilter().apply { add(query) }
-//        val exploreRequest = ExploreRequest().apply {
-//            setSearchCenter(geoCoordinate)
-//            setCategoryFilter(filter)
-//        }
-//        exploreRequest.execute { discoveryResultPage, errorCode ->
-//            computeResult(discoveryResultPage, errorCode)
-//        }
-//    }
+    fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
+        val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
+        val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+        viewState.startSearching(categoryQuery, searchOptions)
+        viewState.showQuery(query.name)
+    }
 
 //    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinate) {
 //        if (query.isNotEmpty()) {
@@ -99,24 +114,31 @@ class MapPresenter : MvpPresenter<MapView>() {
         return MapCircle(geoCircle, circleStyle)
     }
 
-//    private fun computeResult(discoveryResultPage: DiscoveryResultPage?, errorCode: ErrorCode) {
-//        if (errorCode == ErrorCode.NONE) {
-//            if (discoveryResultPage != null) {
-//                val items = discoveryResultPage.items
-//                for (item in items) {
-//                    if (item.resultType == DiscoveryResult.ResultType.PLACE) {
-//                        val mapObject = createMapObject(item as PlaceLink)
-//                        map.addMapObject(mapObject)
-//                        viewState.updateMap(map)
-//                    }
-//                }
-//            } else {
-//                // Not found
-//            }
-//        } else {
-//            viewState.showError(errorCode)
-//        }
-//    }
+    fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
+        if (searchError != null) {
+            Log.i("TAG2", "computeResult: Search Error: $searchError")
+            return
+        }
+
+        if (result != null && result.isNotEmpty()) {
+            places = result
+            clearMap()
+
+            for (place in result) {
+                place.geoCoordinates?.let {
+                    val mapMarker = MapMarker(it)
+                    mapObjects.add(mapMarker)
+                    viewState.addMarkerToMap(mapMarker)
+                }
+                Log.i("Place", "Place: title - ${place.title}")
+            }
+        }
+
+    }
+
+    private fun loadCategories() = GlobalScope.launch {
+        categories = repository.getCategories()
+    }
 
 //    private fun createMapObject(item: PlaceLink): MapMarker {
 //        val img = Image().apply { setImageResource(R.drawable.marker) }
@@ -126,17 +148,19 @@ class MapPresenter : MvpPresenter<MapView>() {
 //    }
 //
 
-//
-//    private fun clearMap() {
-//        if (mapObjects.isNotEmpty()) {
-//            map.removeMapObjects(mapObjects)
-//            mapObjects.clear()
-//            viewState.updateMap(map)
-//        }
-//    }
+
+    private fun clearMap() {
+        if (mapObjects.isNotEmpty()) {
+            mapObjects.forEach {
+                viewState.removeMarkers(it)
+            }
+            mapObjects.clear()
+        }
+    }
 
 }
 
 private const val CUSTOM_ZOOM_LEVEL = 15.0
+private const val MAX_SEARCH_RESULT = 30
 
 private const val LOCATION_UPDATE_INTERVAL_IN_MS = 10000L
