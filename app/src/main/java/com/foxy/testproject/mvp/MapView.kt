@@ -29,11 +29,15 @@ interface MapView : MvpView {
     @StateStrategyType(value = AddToEndStrategy::class)
     fun removeMarkers(marker: MapMarker)
 
+    fun openDialog(title: String, result: List<Category>, titles: List<String>)
+
     fun closeDialog()
 
-    fun showError(errorCode: MapScene.ErrorCode)
+    fun showMarkerDetails()
 
-    fun openDialog(title: String, result: List<Category>, titles: List<String>)
+    fun hideMarkerDetails()
+
+    fun showError(errorCode: MapScene.ErrorCode)
 
     fun showQuery(query: String)
 

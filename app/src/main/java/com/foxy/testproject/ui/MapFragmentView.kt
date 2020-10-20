@@ -1,8 +1,8 @@
 package com.foxy.testproject.ui
 
 import android.app.AlertDialog
-import android.location.LocationListener
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.Toast
 import com.foxy.testproject.GlobalCategories
@@ -13,13 +13,15 @@ import com.foxy.testproject.mvp.MapPresenter
 import com.foxy.testproject.mvp.MapView
 import com.foxy.testproject.utils.InjectorUtils
 import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.core.Point2D
+import com.here.sdk.gestures.TapListener
 import com.here.sdk.mapviewlite.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
 import moxy.presenter.ProvidePresenter
 
-class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
+class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
@@ -45,6 +47,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         setHasOptionsMenu(true)
         createMapView(savedInstanceState)
         initSearchButtons()
+        setTapGestureHandler()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -112,6 +115,18 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         dialog.dismiss()
     }
 
+    override fun showMarkerDetails() {
+        dialog = AlertDialog.Builder(requireContext()).apply {
+            setTitle("title")
+            setMessage("msg")
+            create()
+        }.show()
+    }
+
+    override fun hideMarkerDetails() {
+        dialog.dismiss()
+    }
+
     override fun showError(errorCode: MapScene.ErrorCode) {
         Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
     }
@@ -140,6 +155,20 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         field_request.text.clear()
         btn_search.visibility = View.VISIBLE
         btn_clear.visibility = View.GONE
+    }
+
+    private fun setTapGestureHandler() {
+        mapView.gestures.tapListener = TapListener { touchPoint ->
+            Log.i("TAG3", "setTapGestureHandler: ")
+            pickMapMarker(touchPoint)
+        }
+    }
+
+    private fun pickMapMarker(touchPoint: Point2D) {
+        val radiusInPixel = 1.0
+        mapView.pickMapItems(touchPoint, radiusInPixel) { pickMapItemsResult ->
+            presenter.showDetails(pickMapItemsResult)
+        }
     }
 
     private fun initSearchButtons() {
@@ -213,13 +242,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         initMapScene()
     }
 
-    override fun onLocationChanged(location: android.location.Location) {
-        Toast.makeText(
-            requireContext(),
-            "Location: ${location.latitude}, ${location.longitude}",
-            Toast.LENGTH_LONG
-        ).show()
-    }
 
 
 }

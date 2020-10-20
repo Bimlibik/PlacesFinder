@@ -3,11 +3,10 @@ package com.foxy.testproject.mvp
 import android.location.Location
 import android.util.Log
 import com.foxy.testproject.GlobalCategories
+import com.foxy.testproject.PlaceMetadata
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
-import com.here.sdk.core.GeoCircle
-import com.here.sdk.core.GeoCoordinates
-import com.here.sdk.core.LanguageCode
+import com.here.sdk.core.*
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
 import kotlinx.coroutines.GlobalScope
@@ -36,6 +35,14 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         super.onFirstViewAttach()
         loadCategories()
         searchEngine = SearchEngine()
+    }
+
+    fun showDetails(pickMapItemsResult: PickMapItemsResult?) {
+        if (pickMapItemsResult == null) return
+
+        val topmostMarker = pickMapItemsResult.topmostMarker ?: return
+        val metadata = topmostMarker.metadata
+        viewState.showMarkerDetails()
     }
 
 
@@ -119,7 +126,7 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
 
             for (place in result) {
                 place.geoCoordinates?.let {
-                    viewState.addMarkerToMap(createMarker(it), DEFAULT_IMG_SCALE)
+                    viewState.addMarkerToMap(createMarker(place), DEFAULT_IMG_SCALE)
                 }
                 Log.i("Place", "Place: title - ${place.title}")
             }
@@ -134,8 +141,11 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         return MapCircle(geoCircle, circleStyle)
     }
 
-    private fun createMarker(geoCoordinate: GeoCoordinates): MapMarker {
-        val mapObject = MapMarker(geoCoordinate)
+    private fun createMarker(place: Place): MapMarker {
+        val metaData = Metadata()
+        metaData.setCustomValue("poi", PlaceMetadata(place))
+        val mapObject = MapMarker(place.geoCoordinates!!)
+        mapObject.metadata = metaData
         mapObjects.add(mapObject)
         return mapObject
     }
