@@ -19,7 +19,7 @@ import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
 import moxy.presenter.ProvidePresenter
 
-class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
+class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
@@ -213,13 +213,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView, LocationListener {
         initMapScene()
     }
 
-    override fun onLocationChanged(location: android.location.Location) {
-        Toast.makeText(
-            requireContext(),
-            "Location: ${location.latitude}, ${location.longitude}",
-            Toast.LENGTH_LONG
-        ).show()
-    }
 
 
 }
