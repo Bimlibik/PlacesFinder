@@ -11,6 +11,8 @@ import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import moxy.InjectViewState
 import moxy.MvpPresenter
 
@@ -37,6 +39,14 @@ class MapPresenter(
         super.onFirstViewAttach()
         loadCategories()
         searchEngine = SearchEngine()
+    }
+
+    fun showDetails(pickMapItemsResult: PickMapItemsResult?) {
+        if (pickMapItemsResult == null) return
+
+        val topmostMarker = pickMapItemsResult.topmostMarker ?: return
+        val metadata = topmostMarker.metadata
+        viewState.showMarkerDetails()
     }
 
 
@@ -120,7 +130,7 @@ class MapPresenter(
 
             for (place in result) {
                 place.geoCoordinates?.let {
-                    viewState.addMarkerToMap(createMarker(it), DEFAULT_IMG_SCALE)
+                    viewState.addMarkerToMap(createMarker(place), DEFAULT_IMG_SCALE)
                 }
                 Log.i("Place", "Place: title - ${place.title}")
             }
@@ -135,8 +145,11 @@ class MapPresenter(
         return MapCircle(geoCircle, circleStyle)
     }
 
-    private fun createMarker(geoCoordinate: GeoCoordinates): MapMarker {
-        val mapObject = MapMarker(geoCoordinate)
+    private fun createMarker(place: Place): MapMarker {
+        val metaData = Metadata()
+        metaData.setCustomValue("poi", PlaceMetadata(place))
+        val mapObject = MapMarker(place.geoCoordinates!!)
+        mapObject.metadata = metaData
         mapObjects.add(mapObject)
         return mapObject
     }
