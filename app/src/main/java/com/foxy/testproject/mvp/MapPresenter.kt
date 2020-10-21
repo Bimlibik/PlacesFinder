@@ -3,16 +3,16 @@ package com.foxy.testproject.mvp
 import android.location.Location
 import android.util.Log
 import com.foxy.testproject.GlobalCategories
+import com.foxy.testproject.PlaceMetadata
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
 import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
 import com.here.sdk.core.GeoCircle
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.LanguageCode
+import com.here.sdk.core.Metadata
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import moxy.InjectViewState
 import moxy.MvpPresenter
 
