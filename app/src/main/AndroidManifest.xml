@@ -32,12 +32,8 @@
             </intent-filter>
         </activity>
 
-
-
-        <meta-data android:name="com.here.android.maps.appid" android:value="{YOUR_APP_ID}}"/>
-        <meta-data android:name="com.here.android.maps.apptoken" android:value="{YOUR_APP_CODE}"/>
-        <meta-data android:name="com.here.android.maps.license.key" android:value="{YOUR_LICENSE_KEY}"/>
-
+        <meta-data android:name="com.here.sdk.access_key_id" android:value="${accessKeyId}" />
+        <meta-data android:name="com.here.sdk.access_key_secret" android:value="${accessKeySecret}" />
     </application>
 
 </manifest>

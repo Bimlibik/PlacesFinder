@@ -1,12 +1,12 @@
 package com.foxy.testproject.data
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import com.foxy.testproject.AppExecutors
 import com.foxy.testproject.CategoryDatabaseWorker
 
 @Database(entities = [Category::class], version = 1, exportSchema = false)
@@ -20,19 +20,25 @@ abstract class TestProjectDb : RoomDatabase() {
         @Volatile
         private var instance: TestProjectDb? = null
 
-        fun getInstance(context: Context): TestProjectDb {
+        fun getInstance(context: Context, executors: AppExecutors): TestProjectDb {
             return instance ?: synchronized(this) {
-                instance ?: buildDatabase(context).also { instance = it }
+                instance ?: buildDatabase(context, executors).also {
+                    executors.discIO().execute { it.categoryDao().count() }
+                    instance = it
+                }
             }
         }
 
-        private fun buildDatabase(context: Context): TestProjectDb {
+        private fun buildDatabase(context: Context, executors: AppExecutors): TestProjectDb {
             return Room.databaseBuilder(context, TestProjectDb::class.java, DATABASE_NAME)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        val request = OneTimeWorkRequestBuilder<CategoryDatabaseWorker>().build()
-                        WorkManager.getInstance(context).enqueue(request)
+                        executors.discIO().execute {
+                            val categories = CategoryDatabaseWorker.getCategories(context)
+                            getInstance(context, executors).categoryDao().insertCategories(categories)
+                        }
+                        Log.i("TAG2", "onCreate: db")
                     }
                 })
                 .build()

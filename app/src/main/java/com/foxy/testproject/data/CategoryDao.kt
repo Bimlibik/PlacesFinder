@@ -8,6 +8,9 @@ import com.here.sdk.search.PlaceCategory
 @Dao
 interface CategoryDao {
 
+    @Query("SELECT COUNT(*) FROM categories")
+    fun count(): Int
+
     @Insert
     fun insertCategories(categories: List<Category>)
 

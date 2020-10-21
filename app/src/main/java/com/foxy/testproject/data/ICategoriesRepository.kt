@@ -2,5 +2,10 @@ package com.foxy.testproject.data
 
 interface ICategoriesRepository {
 
-    suspend fun getCategories(): List<Category>
+    fun getCategories(callback: CategoriesLoaded)
+
+    interface CategoriesLoaded {
+        fun onDataLoaded(loadedCategories: List<Category>)
+        fun onDataNotAvailable()
+    }
 }

@@ -5,24 +5,25 @@ import android.util.Log
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
+import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
 import com.here.sdk.core.GeoCircle
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import moxy.InjectViewState
 import moxy.MvpPresenter
 
 @InjectViewState
-class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter<MapView>() {
+class MapPresenter(
+    private val repository: ICategoriesRepository,
+) : MvpPresenter<MapView>() {
 
     private lateinit var searchEngine: SearchEngine
     private var currentCoordinates: GeoCoordinates = GeoCoordinates(0.0, 0.0)
     private var currentZoomLevel: Double = 0.0
 
-    private var categories: List<Category> = mutableListOf()
+    private var categories: MutableList<Category> = mutableListOf()
 
     private var places = mutableListOf<Place>()
         .apply { emptyList<Place>() }
@@ -150,8 +151,20 @@ class MapPresenter(private val repository: ICategoriesRepository) : MvpPresenter
         }
     }
 
-    private fun loadCategories() = GlobalScope.launch {
-        categories = repository.getCategories()
+    private fun loadCategories() {
+        repository.getCategories(object : CategoriesLoaded {
+            override fun onDataLoaded(loadedCategories: List<Category>) {
+                categories.clear()
+                categories.addAll(loadedCategories)
+                Log.i("TAG2", "onDataLoaded: ${loadedCategories.size}")
+            }
+
+            override fun onDataNotAvailable() {
+                loadCategories()
+                Log.i("TAG2", "onDataNotAvailable: ")
+            }
+
+        })
     }
 
 }

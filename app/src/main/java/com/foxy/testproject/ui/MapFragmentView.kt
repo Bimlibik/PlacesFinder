@@ -1,7 +1,6 @@
 package com.foxy.testproject.ui
 
 import android.app.AlertDialog
-import android.location.LocationListener
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -30,7 +29,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     @ProvidePresenter
     fun providePresenter(): MapPresenter =
-        MapPresenter(InjectorUtils.getCategoriesRepository())
+         MapPresenter(InjectorUtils.getCategoriesRepository())
 
     override fun onCreateView(
         inflater: LayoutInflater,

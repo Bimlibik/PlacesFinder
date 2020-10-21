@@ -1,22 +1,23 @@
 package com.foxy.testproject.data
 
-import android.util.Log
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.lang.Exception
+import com.foxy.testproject.AppExecutors
+import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
 
 class CategoriesRepository(
     private val categoryDao: CategoryDao,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val executors: AppExecutors,
 ) : ICategoriesRepository {
 
-    override suspend fun getCategories(): List<Category> = withContext(ioDispatcher) {
-        return@withContext try {
-            categoryDao.getAllCategories()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error while loading categories: $e")
-            emptyList()
+    override fun getCategories(callback: CategoriesLoaded) {
+        executors.discIO().execute {
+            val categories = categoryDao.getAllCategories()
+            executors.mainThread().execute {
+                if (categories.isEmpty()) {
+                    callback.onDataNotAvailable()
+                } else {
+                    callback.onDataLoaded(categories)
+                }
+            }
         }
     }
 
@@ -26,9 +27,9 @@ class CategoriesRepository(
         @Volatile
         private var instance: CategoriesRepository? = null
 
-        fun getInstance(categoryDao: CategoryDao) =
+        fun getInstance(categoryDao: CategoryDao, executors: AppExecutors) =
             instance ?: synchronized(this) {
-                instance ?: CategoriesRepository(categoryDao).also { instance = it }
+                instance ?: CategoriesRepository(categoryDao, executors).also { instance = it }
             }
     }
 }

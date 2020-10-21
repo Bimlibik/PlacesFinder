@@ -10,8 +10,6 @@ class TestProjectApp : Application() {
         INSTANCE = this
     }
 
-    fun getDatabase(): TestProjectDb = TestProjectDb.getInstance(INSTANCE)
-
     companion object {
         private lateinit var INSTANCE: TestProjectApp
 
