@@ -101,7 +101,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     }
 
     override fun addMarkerToMap(marker: MapMarker, newScale: Float) {
-        val img = MapImageFactory.fromResource(resources, R.drawable.marker)
+        val img = MapImageFactory.fromResource(resources, R.drawable.poi)
         val style = MapMarkerImageStyle().apply { scale = newScale }
         marker.addImage(img, style)
         mapView.mapScene.addMapMarker(marker)
