@@ -8,6 +8,9 @@
     <string name="tv_shopping">Покупки</string>
     <string name="tv_services">Услуги</string>
     <string name="tv_facilities">Учреждения</string>
+    <string name="btn_gps_enable">Включить</string>
+    <string name="btn_undo">Отмена</string>
+    <string name="dialog_msg_gps">Для определения местоположения необходимо включить GPS.</string>
 
     <!--Еда и напитки-->
     <string-array name="eat_and_drink">

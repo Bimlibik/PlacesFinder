@@ -6,12 +6,9 @@ import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.mapviewlite.MapCircle
 import com.here.sdk.mapviewlite.MapMarker
 import com.here.sdk.mapviewlite.MapScene
-import com.here.sdk.search.CategoryQuery
-import com.here.sdk.search.SearchOptions
-import com.here.sdk.search.TextQuery
 import moxy.MvpView
 import moxy.viewstate.strategy.AddToEndSingleStrategy
-import moxy.viewstate.strategy.AddToEndStrategy
+import moxy.viewstate.strategy.SkipStrategy
 import moxy.viewstate.strategy.StateStrategyType
 
 @StateStrategyType(value = AddToEndSingleStrategy::class)
@@ -23,15 +20,20 @@ interface MapView : MvpView {
 
     fun startLocating()
 
-    @StateStrategyType(value = AddToEndStrategy::class)
-    fun addMarkerToMap(marker: MapMarker, newScale: Float)
+    fun openGpsInfoDialog()
 
-    @StateStrategyType(value = AddToEndStrategy::class)
-    fun removeMarkers(marker: MapMarker)
+    fun hideGpsInfoDialog()
 
-    fun openDialog(title: String, result: List<Category>, titles: List<String>)
+    @StateStrategyType(value = SkipStrategy::class)
+    fun openGpsSettings()
 
-    fun closeDialog()
+    fun addMarkersToMap(mapObjects: List<MapMarker>)
+
+    fun removeMarkers(mapObjects: List<MapMarker>)
+
+    fun openCategoriesDialog(title: String, result: List<Category>, titles: List<String>)
+
+    fun hideCategoriesDialog()
 
     fun showMarkerDetails()
 

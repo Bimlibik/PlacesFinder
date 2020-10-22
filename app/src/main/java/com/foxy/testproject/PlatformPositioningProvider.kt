@@ -23,6 +23,7 @@ class PlatformPositioningProvider(private val context: Context) : LocationListen
 
     interface PlatformLocationListener {
         fun onLocationUpdated(location: Location?)
+        fun onGpsDisabled()
     }
 
     override fun onLocationChanged(location: Location) {
@@ -59,31 +60,32 @@ class PlatformPositioningProvider(private val context: Context) : LocationListen
 
     fun startLocating(locationCallback: PlatformLocationListener?) {
         if (platformLocationListener != null) {
-            throw RuntimeException("Please stop locating before starting again.")
+            return
+//            throw RuntimeException("Please stop locating before starting again.")
         }
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
             Log.d(LOG_TAG, "Positioning permissions denied.")
             return
         }
+
         platformLocationListener = locationCallback
         locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
-            context.packageManager.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                LOCATION_UPDATE_INTERVAL_IN_MS,
-                1f,
-                this
-            )
+
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    LOCATION_UPDATE_INTERVAL_IN_MS,
+                    1f,
+                    this
+                )
+            } else {
+                platformLocationListener?.onGpsDisabled()
+            }
         } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
@@ -105,11 +107,11 @@ class PlatformPositioningProvider(private val context: Context) : LocationListen
         platformLocationListener = null
     }
 
-    fun isStarted(): Boolean = platformLocationListener != null
+    fun isGpsEnabled() = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
 
 
     companion object {
-        val LOG_TAG = PlatformPositioningProvider::class.java.name
+        const val LOG_TAG = "PlatformPosProvider"
         const val LOCATION_UPDATE_INTERVAL_IN_MS = 10000L
     }
 

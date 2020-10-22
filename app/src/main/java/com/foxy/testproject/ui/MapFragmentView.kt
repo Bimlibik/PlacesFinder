@@ -1,7 +1,10 @@
 package com.foxy.testproject.ui
 
 import android.app.AlertDialog
+import android.content.Intent
+import android.location.Location
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.widget.Toast
@@ -11,6 +14,7 @@ import com.foxy.testproject.R
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.mvp.MapPresenter
 import com.foxy.testproject.mvp.MapView
+import com.foxy.testproject.utils.DialogType
 import com.foxy.testproject.utils.InjectorUtils
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.Point2D
@@ -57,7 +61,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.item_locate -> {
-                presenter.locate(platformPositioningProvider.isStarted())
+                presenter.locate(platformPositioningProvider.isGpsEnabled())
                 true
             }
             else -> return super.onOptionsItemSelected(item)
@@ -94,31 +98,54 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     override fun startLocating() {
         platformPositioningProvider.startLocating(object :
             PlatformPositioningProvider.PlatformLocationListener {
-            override fun onLocationUpdated(location: android.location.Location?) {
+            override fun onLocationUpdated(location: Location?) {
                 presenter.saveLocation(location)
+            }
+
+            override fun onGpsDisabled() {
+                presenter.showGpsInfo()
             }
         })
     }
 
-    override fun addMarkerToMap(marker: MapMarker, newScale: Float) {
-        val img = MapImageFactory.fromResource(resources, R.drawable.poi)
-        val style = MapMarkerImageStyle().apply { scale = newScale }
-        marker.addImage(img, style)
-        mapView.mapScene.addMapMarker(marker)
+    override fun openGpsInfoDialog() {
+        dialog = AlertDialog.Builder(requireContext()).apply {
+            setMessage(getString(R.string.dialog_msg_gps))
+            setCancelable(false)
+            setPositiveButton(getString(R.string.btn_gps_enable)) { _, _ -> presenter.enableGps() }
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ -> presenter.closeDialog(DialogType.GPS) }
+            create()
+        }.show()
     }
 
-    override fun removeMarkers(marker: MapMarker) {
-        mapView.mapScene.removeMapMarker(marker)
-    }
-
-    override fun closeDialog() {
+    override fun hideGpsInfoDialog() {
         dialog.dismiss()
+    }
+
+    override fun openGpsSettings() {
+        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+    }
+
+    override fun addMarkersToMap(mapObjects: List<MapMarker>) {
+        val img = MapImageFactory.fromResource(resources, R.drawable.poi)
+        val style = MapMarkerImageStyle()
+        mapObjects.forEach { marker ->
+            marker.addImage(img, style)
+            mapView.mapScene.addMapMarker(marker)
+        }
+    }
+
+    override fun removeMarkers(mapObjects: List<MapMarker>) {
+        mapObjects.forEach {
+            mapView.mapScene.removeMapMarker(it)
+        }
     }
 
     override fun showMarkerDetails() {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle("title")
             setMessage("msg")
+            setOnCancelListener { presenter.closeDialog(DialogType.MARKER) }
             create()
         }.show()
     }
@@ -131,7 +158,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
     }
 
-    override fun openDialog(title: String, categories: List<Category>, titles: List<String>) {
+    override fun openCategoriesDialog(title: String, categories: List<Category>, titles: List<String>) {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle(title)
             setItems(titles.toTypedArray()) { _, which ->
@@ -140,8 +167,14 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
                     mapView.camera.target
                 )
             }
+            setCancelable(false)
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ -> presenter.closeDialog(DialogType.CATEGORIES) }
             create()
         }.show()
+    }
+
+    override fun hideCategoriesDialog() {
+        dialog.dismiss()
     }
 
     override fun showQuery(query: String) {

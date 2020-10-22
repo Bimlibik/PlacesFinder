@@ -7,6 +7,7 @@ import com.foxy.testproject.PlaceMetadata
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
 import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
+import com.foxy.testproject.utils.DialogType
 import com.here.sdk.core.GeoCircle
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.LanguageCode
@@ -24,11 +25,9 @@ class MapPresenter(
     private lateinit var searchEngine: SearchEngine
     private var currentCoordinates: GeoCoordinates = GeoCoordinates(0.0, 0.0)
     private var currentZoomLevel: Double = 0.0
+    private var showGpsInfo = true
 
     private var categories: MutableList<Category> = mutableListOf()
-
-    private var places = mutableListOf<Place>()
-        .apply { emptyList<Place>() }
 
     private var mapObjects = mutableListOf<MapMarker>()
         .apply { emptyList<MapMarker>() }
@@ -41,6 +40,14 @@ class MapPresenter(
         searchEngine = SearchEngine()
     }
 
+    fun closeDialog(type: DialogType) {
+        when(type) {
+            DialogType.CATEGORIES -> viewState.hideCategoriesDialog()
+            DialogType.GPS -> viewState.hideGpsInfoDialog()
+            else -> viewState.hideMarkerDetails()
+        }
+    }
+
     fun showDetails(pickMapItemsResult: PickMapItemsResult?) {
         if (pickMapItemsResult == null) return
 
@@ -48,7 +55,6 @@ class MapPresenter(
         val metadata = topmostMarker.metadata
         viewState.showMarkerDetails()
     }
-
 
     fun clear() {
         clearMap()
@@ -64,12 +70,27 @@ class MapPresenter(
                 titles.add(category.name)
             }
         }
-        viewState.openDialog(title, groupCategories, titles)
+        viewState.openCategoriesDialog(title, groupCategories, titles)
     }
 
-    fun locate(isStarted: Boolean) {
-        if (isStarted) return
-        viewState.startLocating()
+    fun showGpsInfo() {
+        if (showGpsInfo) {
+            viewState.openGpsInfoDialog()
+            showGpsInfo = !showGpsInfo
+        }
+    }
+
+    fun enableGps() {
+        viewState.openGpsSettings()
+        viewState.hideGpsInfoDialog()
+    }
+
+    fun locate(isGpsEnabled: Boolean) {
+        if (isGpsEnabled) {
+            viewState.startLocating()
+        } else {
+            viewState.openGpsInfoDialog()
+        }
     }
 
     fun saveLocation(location: Location?) {
@@ -88,7 +109,7 @@ class MapPresenter(
             computeResult(error, result)
         }
 
-        viewState.closeDialog()
+        viewState.hideCategoriesDialog()
         viewState.showQuery(query.name)
     }
 
@@ -126,16 +147,14 @@ class MapPresenter(
         }
 
         if (result != null && result.isNotEmpty()) {
-            places = result
-
             for (place in result) {
                 place.geoCoordinates?.let {
-                    viewState.addMarkerToMap(createMarker(place), DEFAULT_IMG_SCALE)
+                    mapObjects.add(createMarker(place))
                 }
                 Log.i("Place", "Place: title - ${place.title}")
             }
+            viewState.addMarkersToMap(mapObjects)
         }
-
     }
 
     private fun createMapCircle(coordinates: GeoCoordinates, radius: Float): MapCircle {
@@ -150,17 +169,13 @@ class MapPresenter(
         metaData.setCustomValue("poi", PlaceMetadata(place))
         val mapObject = MapMarker(place.geoCoordinates!!)
         mapObject.metadata = metaData
-        mapObjects.add(mapObject)
         return mapObject
     }
 
     private fun clearMap() {
         if (mapObjects.isNotEmpty()) {
-            mapObjects.forEach {
-                viewState.removeMarkers(it)
-            }
+            viewState.removeMarkers(mapObjects)
             mapObjects.clear()
-            places.clear()
         }
     }
 
@@ -169,14 +184,11 @@ class MapPresenter(
             override fun onDataLoaded(loadedCategories: List<Category>) {
                 categories.clear()
                 categories.addAll(loadedCategories)
-                Log.i("TAG2", "onDataLoaded: ${loadedCategories.size}")
             }
 
             override fun onDataNotAvailable() {
                 loadCategories()
-                Log.i("TAG2", "onDataNotAvailable: ")
             }
-
         })
     }
 
@@ -184,5 +196,4 @@ class MapPresenter(
 
 private const val DEFAULT_ZOOM_LEVEL = 15.0
 private const val DEFAULT_RADIUS = 500f
-private const val DEFAULT_IMG_SCALE = 0.5f
 private const val MAX_SEARCH_RESULT = 30
