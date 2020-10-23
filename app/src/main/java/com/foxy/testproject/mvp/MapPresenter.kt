@@ -1,180 +1,204 @@
 package com.foxy.testproject.mvp
 
-import android.graphics.Color
+import android.location.Location
+import android.util.Log
+import android.view.View
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.R
-import com.here.android.mpa.common.*
-import com.here.android.mpa.mapping.Map
-import com.here.android.mpa.mapping.MapCircle
-import com.here.android.mpa.mapping.MapMarker
-import com.here.android.mpa.mapping.MapObject
-import com.here.android.mpa.search.*
+import com.foxy.testproject.data.Category
+import com.foxy.testproject.data.ICategoriesRepository
+import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
+import com.foxy.testproject.utils.DialogType
+import com.here.sdk.core.GeoCircle
+import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.core.LanguageCode
+import com.here.sdk.mapviewlite.*
+import com.here.sdk.search.*
 import moxy.InjectViewState
 import moxy.MvpPresenter
-import java.lang.ref.WeakReference
-import java.util.*
 
 @InjectViewState
-class MapPresenter : MvpPresenter<MapView>() {
+class MapPresenter(
+    private val repository: ICategoriesRepository,
+) : MvpPresenter<MapView>() {
 
-    private lateinit var map: Map
-    private lateinit var positionManager: PositioningManager
-    private lateinit var currentCoordinate: GeoCoordinate
+    private lateinit var searchEngine: SearchEngine
+    private var currentCoordinates: GeoCoordinates = GeoCoordinates(0.0, 0.0)
     private var currentZoomLevel: Double = 0.0
+    private var showGpsInfo = true
 
-    private var mapObjects = mutableListOf<MapObject>()
-        .apply { emptyList<MapObject>() }
+    private var categories: MutableList<Category> = mutableListOf()
+
+    private var mapObjects = mutableListOf<MapMarker>()
+        .apply { emptyList<MapMarker>() }
 
     private lateinit var circle: MapCircle
+    private lateinit var currentDot: MapMarker
 
+    override fun onFirstViewAttach() {
+        super.onFirstViewAttach()
+        loadCategories()
+        searchEngine = SearchEngine()
+    }
+
+    fun closeDialog(type: DialogType) {
+        when (type) {
+            DialogType.CATEGORIES -> viewState.hideCategoriesDialog()
+            DialogType.GPS -> {
+                viewState.hideGpsInfoDialog()
+                viewState.updateToolbar(View.GONE, R.string.app_name)
+            }
+        }
+    }
 
     fun clear() {
         clearMap()
         viewState.clearQuery()
     }
 
-    fun showMoreCategories(globalCategory: GlobalCategories, title: String) {
-        val categoriesId = globalCategory.toString().toLowerCase(Locale.ROOT)
-        val requestsId = "${categoriesId}_request"
-        viewState.openDialog(categoriesId, requestsId, title)
-    }
-
-    fun locate(isInitialized: Boolean) {
-        if (isInitialized) {
-            positionManager = PositioningManager.getInstance().apply {
-                addListener(setupPositioningListener())
-                start(PositioningManager.LocationMethod.GPS_NETWORK)
-            }
-        }
-    }
-
-    fun searchByCategory(query: String, title: String, geoCoordinate: GeoCoordinate) {
+    fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
         clearMap()
-        viewState.closeDialog()
-        viewState.showQuery(title)
+        val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
+        val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+        searchEngine.search(categoryQuery, searchOptions) { error, result ->
+            computeResult(error, result)
+        }
 
-        val filter = CategoryFilter().apply { add(query) }
-        val exploreRequest = ExploreRequest().apply {
-            setSearchCenter(geoCoordinate)
-            setCategoryFilter(filter)
-        }
-        exploreRequest.execute { discoveryResultPage, errorCode ->
-            computeResult(discoveryResultPage, errorCode)
-        }
+        viewState.hideCategoriesDialog()
+        viewState.showQuery(query.name)
     }
 
-    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinate) {
+    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinates) {
         if (query.isNotEmpty()) {
             clearMap()
-
-            val searchRequest = SearchRequest(query).setSearchCenter(geoCoordinate)
-            searchRequest.execute { discoveryResultPage, errorCode ->
-                computeResult(discoveryResultPage, errorCode)
+            val textQuery = TextQuery(query, geoCoordinate)
+            val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+            searchEngine.search(textQuery, searchOptions) { error, result ->
+                computeResult(error, result)
             }
-
             viewState.showQuery(query)
         }
     }
 
-    fun onEngineInitializationCompleted(error: OnEngineInitListener.Error) {
-        if (error == OnEngineInitListener.Error.NONE) {
-            initMap()
-            locate(true)
-            viewState.updateMap(map)
-        } else {
-            error.stackTrace
+    fun showMoreCategories(globalCategory: GlobalCategories, title: String) {
+        val groupCategories = arrayListOf<Category>()
+        val titles = arrayListOf<String>()
+        for (category in categories) {
+            if (category.groupId == globalCategory.id) {
+                groupCategories.add(category)
+                titles.add(category.name)
+            }
+        }
+        viewState.openCategoriesDialog(title, groupCategories, titles)
+    }
+
+    fun showGpsInfo() {
+        if (showGpsInfo) {
+            viewState.openGpsInfoDialog()
+            showGpsInfo = !showGpsInfo
         }
     }
 
-    private fun computeResult(discoveryResultPage: DiscoveryResultPage?, errorCode: ErrorCode) {
-        if (errorCode == ErrorCode.NONE) {
-            if (discoveryResultPage != null) {
-                val items = discoveryResultPage.items
-                for (item in items) {
-                    if (item.resultType == DiscoveryResult.ResultType.PLACE) {
-                        val mapObject = createMapObject(item as PlaceLink)
-                        map.addMapObject(mapObject)
-                        viewState.updateMap(map)
-                    }
-                }
-            } else {
-                // Not found
-            }
+    fun enableGps() {
+        viewState.openGpsSettings()
+        viewState.hideGpsInfoDialog()
+        viewState.updateToolbar(View.VISIBLE, R.string.toolbar_title)
+    }
+
+    fun locate(isGpsEnabled: Boolean) {
+        if (isGpsEnabled) {
+            viewState.startLocating()
+        } else {
+            viewState.openGpsInfoDialog()
+        }
+    }
+
+    fun saveLocation(location: Location?) {
+        location?.let {
+            currentCoordinates = GeoCoordinates(location.latitude, location.longitude)
+            currentZoomLevel = DEFAULT_ZOOM_LEVEL
+            viewState.updateMap(currentCoordinates, currentZoomLevel)
+            viewState.updateToolbar(View.GONE, R.string.app_name)
+            createDot(currentCoordinates)
+            createMapCircle(currentCoordinates)
+        }
+    }
+
+    fun onMapSceneInitializationCompleted(errorCode: MapScene.ErrorCode?) {
+        if (errorCode == null) {
+            viewState.updateMap(currentCoordinates, currentZoomLevel)
         } else {
             viewState.showError(errorCode)
         }
     }
 
-    private fun createMapObject(item: PlaceLink): MapMarker {
-        val img = Image().apply { setImageResource(R.drawable.marker) }
-        val mapObject = MapMarker(item.position!!, img)
-        mapObjects.add(mapObject)
-        return mapObject
+    private fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
+        if (searchError != null) {
+            Log.i(TAG, "computeResult: Search Error: $searchError")
+            return
+        }
+
+        if (result != null && result.isNotEmpty()) {
+            for (place in result) {
+                place.geoCoordinates?.let {
+                    mapObjects.add(createMarker(it))
+                }
+            }
+            viewState.addMarkersToMap(mapObjects)
+        }
     }
 
-    private fun createCircle(): MapCircle {
-        val newCircle = MapCircle(500.0, currentCoordinate).apply {
-            lineColor = Color.GRAY
-            fillColor = Color.TRANSPARENT
-            lineWidth = 12
+    private fun createDot(coordinates: GeoCoordinates) {
+        val newDot = MapMarker(coordinates)
+        if (this::currentDot.isInitialized) {
+            viewState.showCurrentLocation(currentDot, newDot)
+        } else {
+            viewState.showCurrentLocation(newDot, newDot)
+        }
+        currentDot = newDot
+    }
+
+    private fun createMapCircle(coordinates: GeoCoordinates, radius: Float = DEFAULT_RADIUS) {
+        val geoCircle = GeoCircle(coordinates, radius)
+        val circleStyle =
+            MapCircleStyle().apply { setStrokeColor(0x00908AA0, PixelFormat.RGBA_8888) }
+        val newCircle = MapCircle(geoCircle, circleStyle)
+
+        if (this::circle.isInitialized) {
+            viewState.updateMapCircle(circle, newCircle)
+        } else {
+            viewState.updateMapCircle(newCircle, newCircle)
         }
         circle = newCircle
-        return newCircle
+    }
+
+    private fun createMarker(geoCoordinate: GeoCoordinates): MapMarker {
+        return MapMarker(geoCoordinate)
     }
 
     private fun clearMap() {
         if (mapObjects.isNotEmpty()) {
-            map.removeMapObjects(mapObjects)
+            viewState.removeMarkers(mapObjects)
             mapObjects.clear()
-            viewState.updateMap(map)
         }
     }
 
-    private fun setupMap(posIndicatorShown: Boolean) {
-        map.apply {
-            setCenter(currentCoordinate, Map.Animation.NONE)
-            zoomLevel = currentZoomLevel
-            projectionMode = Map.Projection.MERCATOR
-            map.positionIndicator.isVisible = posIndicatorShown
-            addMapObject(createCircle())
-        }
-    }
-
-    private fun initMap() {
-        if (!this::map.isInitialized) {
-            map = Map()
-            currentCoordinate = GeoCoordinate(0.0, 0.0, 0.0)
-        }
-
-        setupMap(false)
-    }
-
-    private fun setupPositioningListener(): WeakReference<PositioningManager.OnPositionChangedListener> =
-        WeakReference(object : PositioningManager.OnPositionChangedListener {
-            override fun onPositionUpdated(
-                locationMethod: PositioningManager.LocationMethod?,
-                geoPosition: GeoPosition?,
-                mapMatched: Boolean
-            ) {
-                map.removeMapObject(circle)
-
-                geoPosition?.let { position ->
-                    currentCoordinate = position.coordinate
-                    currentZoomLevel = CUSTOM_ZOOM_LEVEL
-                    setupMap(true)
-                    viewState.updateMap(map)
-                    positionManager.stop()
-                }
+    private fun loadCategories() {
+        repository.getCategories(object : CategoriesLoaded {
+            override fun onDataLoaded(loadedCategories: List<Category>) {
+                categories.clear()
+                categories.addAll(loadedCategories)
             }
 
-            override fun onPositionFixChanged(
-                p0: PositioningManager.LocationMethod?,
-                p1: PositioningManager.LocationStatus?
-            ) {
-
+            override fun onDataNotAvailable() {
+                loadCategories()
             }
-
         })
+    }
+
 }
 
-private const val CUSTOM_ZOOM_LEVEL = 15.0
+private const val TAG = "MapPresenter"
+private const val DEFAULT_ZOOM_LEVEL = 15.0
+private const val DEFAULT_RADIUS = 500f
+private const val MAX_SEARCH_RESULT = 30

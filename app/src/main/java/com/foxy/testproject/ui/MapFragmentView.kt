@@ -1,30 +1,40 @@
 package com.foxy.testproject.ui
 
 import android.app.AlertDialog
+import android.content.Intent
+import android.location.Location
 import android.os.Bundle
+import android.provider.Settings
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.foxy.testproject.GlobalCategories
+import com.foxy.testproject.PlatformPositioningProvider
 import com.foxy.testproject.R
+import com.foxy.testproject.data.Category
 import com.foxy.testproject.mvp.MapPresenter
 import com.foxy.testproject.mvp.MapView
-import com.here.android.mpa.common.ApplicationContext
-import com.here.android.mpa.common.MapEngine
-import com.here.android.mpa.mapping.AndroidXMapFragment
-import com.here.android.mpa.mapping.Map
-import com.here.android.mpa.search.ErrorCode
+import com.foxy.testproject.utils.DialogType
+import com.foxy.testproject.utils.InjectorUtils
+import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.mapviewlite.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
 import moxy.presenter.InjectPresenter
+import moxy.presenter.ProvidePresenter
 
 class MapFragmentView : MvpAppCompatFragment(), MapView {
 
-    private var mapFragment: AndroidXMapFragment = AndroidXMapFragment()
-
+    private lateinit var mapView: MapViewLite
     private lateinit var dialog: AlertDialog
+    private lateinit var platformPositioningProvider: PlatformPositioningProvider
 
     @InjectPresenter
     lateinit var presenter: MapPresenter
+
+    @ProvidePresenter
+    fun providePresenter(): MapPresenter =
+        MapPresenter(InjectorUtils.getCategoriesRepository())
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,8 +44,11 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        platformPositioningProvider = PlatformPositioningProvider(requireContext())
+        setupToolbar()
         setHasOptionsMenu(true)
-        createMapFragment()
+        createMapView(savedInstanceState)
         initSearchButtons()
     }
 
@@ -46,47 +59,129 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.item_locate -> {
-                presenter.locate(MapEngine.isInitialized())
+                presenter.locate(platformPositioningProvider.isGpsEnabled())
                 true
             }
             else -> return super.onOptionsItemSelected(item)
         }
     }
 
-    override fun updateMap(map: Map) {
-        mapFragment.setMap(map)
+    override fun onPause() {
+        super.onPause()
+        mapView.onPause()
+        platformPositioningProvider.stopLocating()
     }
 
-    override fun closeDialog() {
-        dialog.dismiss()
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+        startLocating()
     }
 
-    override fun showError(errorCode: ErrorCode) {
-        Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView.onDestroy()
     }
 
-    override fun openDialog(categoriesId: String, requestsId: String, title: String) {
-        val categoriesResId =
-            resources.getIdentifier(categoriesId, "array", requireContext().packageName)
-        val requestResId =
-            resources.getIdentifier(requestsId, "array", requireContext().packageName)
-        val categories = resources.getStringArray(categoriesResId)
-        val requests = resources.getStringArray(requestResId)
+    override fun updateMap(coordinates: GeoCoordinates, zoomLevel: Double) {
+        mapView.camera.target = coordinates
+        mapView.camera.zoomLevel = zoomLevel
+    }
+
+    override fun updateMapCircle(oldMapCircle: MapCircle, newMapCircle: MapCircle) {
+        mapView.mapScene.removeMapCircle(oldMapCircle)
+        mapView.mapScene.addMapCircle(newMapCircle)
+    }
+
+    override fun startLocating() {
+        platformPositioningProvider.startLocating(object :
+            PlatformPositioningProvider.PlatformLocationListener {
+            override fun onLocationUpdated(location: Location?) {
+                presenter.saveLocation(location)
+            }
+
+            override fun onGpsDisabled() {
+                presenter.showGpsInfo()
+            }
+        })
+    }
+
+    override fun showCurrentLocation(oldDot: MapMarker, newDot: MapMarker) {
+        val img = MapImageFactory.fromResource(resources, R.drawable.green_dot)
+        val style = MapMarkerImageStyle()
+        newDot.addImage(img, style)
+        mapView.mapScene.removeMapMarker(oldDot)
+        mapView.mapScene.addMapMarker(newDot)
+    }
+
+    override fun openGpsInfoDialog() {
         dialog = AlertDialog.Builder(requireContext()).apply {
-            setTitle(title)
-            setItems(categories) { _, which ->
-                presenter.searchByCategory(
-                    requests[which],
-                    categories[which],
-                    mapFragment.map?.center!!
+            setMessage(getString(R.string.dialog_msg_gps))
+            setCancelable(false)
+            setPositiveButton(getString(R.string.btn_gps_enable)) { _, _ -> presenter.enableGps() }
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ ->
+                presenter.closeDialog(
+                    DialogType.GPS
                 )
             }
             create()
         }.show()
     }
 
+    override fun hideGpsInfoDialog() {
+        dialog.dismiss()
+    }
+
+    override fun openGpsSettings() {
+        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+    }
+
+    override fun addMarkersToMap(mapObjects: List<MapMarker>) {
+        val img = MapImageFactory.fromResource(resources, R.drawable.poi)
+        val style = MapMarkerImageStyle()
+        mapObjects.forEach { marker ->
+            marker.addImage(img, style)
+            mapView.mapScene.addMapMarker(marker)
+        }
+    }
+
+    override fun removeMarkers(mapObjects: List<MapMarker>) {
+        mapObjects.forEach {
+            mapView.mapScene.removeMapMarker(it)
+        }
+    }
+
+    override fun showError(errorCode: MapScene.ErrorCode) {
+        Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
+    }
+
+    override fun openCategoriesDialog(
+        title: String,
+        categories: List<Category>,
+        titles: List<String>
+    ) {
+        dialog = AlertDialog.Builder(requireContext()).apply {
+            setTitle(title)
+            setItems(titles.toTypedArray()) { _, which ->
+                presenter.searchByCategory(categories[which], mapView.camera.target)
+            }
+            setCancelable(false)
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ ->
+                presenter.closeDialog(
+                    DialogType.CATEGORIES
+                )
+            }
+            create()
+        }.show()
+    }
+
+    override fun hideCategoriesDialog() {
+        dialog.dismiss()
+    }
+
     override fun showQuery(query: String) {
         field_request.setText(query)
+        field_request.setSelection(query.length)
         btn_search.visibility = View.GONE
         btn_clear.visibility = View.VISIBLE
     }
@@ -95,6 +190,11 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         field_request.text.clear()
         btn_search.visibility = View.VISIBLE
         btn_clear.visibility = View.GONE
+    }
+
+    override fun updateToolbar(progressVisibility: Int, title: Int) {
+        progress.visibility = progressVisibility
+        toolbar_title.text = getString(title)
     }
 
     private fun initSearchButtons() {
@@ -149,24 +249,31 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         btn_search.setOnClickListener {
             presenter.searchByKeyword(
                 field_request.text.toString(),
-                mapFragment.map?.center!!
+                mapView.camera.target
             )
         }
 
         btn_clear.setOnClickListener { presenter.clear() }
     }
 
-    private fun initMapEngine() {
-        mapFragment.init(ApplicationContext(requireContext())) { error ->
-            presenter.onEngineInitializationCompleted(error)
+    private fun initMapScene() {
+        mapView.mapScene.loadScene(MapStyle.NORMAL_DAY) { errorCode ->
+            presenter.onMapSceneInitializationCompleted(errorCode)
         }
     }
 
-    private fun createMapFragment() {
-        childFragmentManager.beginTransaction()
-            .add(R.id.map_view, mapFragment)
-            .commit()
-        initMapEngine()
+    private fun createMapView(savedInstanceState: Bundle?) {
+        mapView = requireActivity().findViewById(R.id.map_view)
+        mapView.onCreate(savedInstanceState)
+        initMapScene()
     }
+
+    private fun setupToolbar() {
+        if (activity is AppCompatActivity) {
+            (activity as AppCompatActivity).setSupportActionBar(toolbar)
+            (activity as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false)
+        }
+    }
+
 
 }

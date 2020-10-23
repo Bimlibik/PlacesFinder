@@ -3,10 +3,16 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
+Properties properties = new Properties()
+properties.load(project.rootProject.file('keystore.properties').newDataInputStream())
+def accessKeyId = properties.getProperty('access_key_id')
+def accessKeySecret = properties.getProperty('access_key_secret')
+
 android {
     compileSdkVersion 30
 
     defaultConfig {
+        manifestPlaceholders = [accessKeyId: accessKeyId, accessKeySecret: accessKeySecret]
         applicationId "com.foxy.testproject"
         minSdkVersion 21
         targetSdkVersion 30
@@ -40,16 +46,17 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation fileTree(dir: "libs", include: ['*.jar', '*.aar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.3.2'
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.2'
     implementation 'com.google.android:flexbox:2.0.1'
+    implementation 'androidx.room:room-runtime:2.2.5'
+    kapt "androidx.room:room-compiler:2.2.5"
+    implementation "androidx.room:room-ktx:2.2.5"
 
     implementation 'com.google.code.gson:gson:2.8.6'
-
-    implementation(name:'HERE-sdk', ext:'aar')
 
     // moxy
     implementation "com.github.moxy-community:moxy:2.0.2"

@@ -1,23 +1,47 @@
 package com.foxy.testproject.mvp
 
-import com.here.android.mpa.mapping.Map
-import com.here.android.mpa.search.ErrorCode
+
+import com.foxy.testproject.data.Category
+import com.here.sdk.core.GeoCoordinates
+import com.here.sdk.mapviewlite.MapCircle
+import com.here.sdk.mapviewlite.MapMarker
+import com.here.sdk.mapviewlite.MapScene
 import moxy.MvpView
 import moxy.viewstate.strategy.AddToEndSingleStrategy
+import moxy.viewstate.strategy.SkipStrategy
 import moxy.viewstate.strategy.StateStrategyType
 
 @StateStrategyType(value = AddToEndSingleStrategy::class)
 interface MapView : MvpView {
 
-    fun updateMap(map: Map)
+    fun updateMap(coordinates: GeoCoordinates, zoomLevel: Double)
 
-    fun closeDialog()
+    fun updateMapCircle(oldMapCircle: MapCircle, newMapCircle: MapCircle)
 
-    fun showError(errorCode: ErrorCode)
+    fun startLocating()
 
-    fun openDialog(categoriesId: String, requestsId: String, title: String)
+    fun showCurrentLocation(oldDot: MapMarker, newDot: MapMarker)
+
+    fun openGpsInfoDialog()
+
+    fun hideGpsInfoDialog()
+
+    @StateStrategyType(value = SkipStrategy::class)
+    fun openGpsSettings()
+
+    fun addMarkersToMap(mapObjects: List<MapMarker>)
+
+    fun removeMarkers(mapObjects: List<MapMarker>)
+
+    fun openCategoriesDialog(title: String, categories: List<Category>, titles: List<String>)
+
+    fun hideCategoriesDialog()
+
+    fun showError(errorCode: MapScene.ErrorCode)
 
     fun showQuery(query: String)
 
     fun clearQuery()
+
+    fun updateToolbar(progressVisibility: Int, title: Int)
 }

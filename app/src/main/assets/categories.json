@@ -1,0 +1,332 @@
+[
+  {
+    "categoryId": "100-1000",
+    "name": "Рестораны",
+    "group": "eat_and_drink",
+    "groupId": "100"
+  },
+  {
+    "categoryId": "100-1000-0009",
+    "name": "Закусочные и рестораны быстрого питания",
+    "group": "eat_and_drink",
+    "groupId": "100"
+  },
+  {
+    "categoryId": "200-2000-0011",
+    "name": "Бар",
+    "group": "eat_and_drink",
+    "groupId": "100"
+  },
+  {
+    "categoryId": "100-1100",
+    "name": "Кофе, чай",
+    "group": "eat_and_drink",
+    "groupId": "100"
+  },
+  {
+    "categoryId": "200-2000",
+    "name": "Дискотеки и ночные клубы",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "200-2300",
+    "name": "Казино",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "200-2100",
+    "name": "Кинотеатры",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "200-2200",
+    "name": "Театры, концертные залы, учреждения культуры",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "350",
+    "name": "Водоемы и парки",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "550-5520-0208",
+    "name": "Зоопарки",
+    "group": "going_out",
+    "groupId": "200"
+  },
+  {
+    "categoryId": "300-3000",
+    "name": "Интересные места и достопримечательности",
+    "group": "sights",
+    "groupId": "300"
+  },
+  {
+    "categoryId": "300-3100",
+    "name": "Музеи",
+    "group": "sights",
+    "groupId": "300"
+  },
+  {
+    "categoryId": "300-3200",
+    "name": "Религиозное заведение",
+    "group": "sights",
+    "groupId": "300"
+  },
+  {
+    "categoryId": "400-4000",
+    "name": "Аэропорт",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "400-4100-0035",
+    "name": "Железнодорожный вокзал",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "400-4100-0036",
+    "name": "Автовокзал",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "400-4100-0042",
+    "name": "Автобусные остановки",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "400-4100-0044",
+    "name": "Паромный терминал",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "400-4100-0047",
+    "name": "Стоянка такси",
+    "group": "transport",
+    "groupId": "400"
+  },
+  {
+    "categoryId": "500-5000-0053",
+    "name": "Гостиницы",
+    "group": "accommodation",
+    "groupId": "500"
+  },
+  {
+    "categoryId": "500-5000-0054",
+    "name": "Мотели",
+    "group": "accommodation",
+    "groupId": "500"
+  },
+  {
+    "categoryId": "500-5100-0055",
+    "name": "Хостел",
+    "group": "accommodation",
+    "groupId": "500"
+  },
+  {
+    "categoryId": "500-5100-0056",
+    "name": "Кемпинг",
+    "group": "accommodation",
+    "groupId": "500"
+  },
+  {
+    "categoryId": "700-7800",
+    "name": "Автосалон",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6300-0068",
+    "name": "Алкогольные напитки",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6400",
+    "name": "Аптеки",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6300",
+    "name": "Еда и напитки",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6000",
+    "name": "Киоски, круглосуточные магазины",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6700",
+    "name": "Книжные магазины",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6800",
+    "name": "Одежда и аксессуары",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6900-0094",
+    "name": "Спортивные товары",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6600",
+    "name": "Строительные и садовые товары",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6100",
+    "name": "Торговые центры",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6200",
+    "name": "Универмаги",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "600-6500",
+    "name": "Электроника",
+    "group": "shopping",
+    "groupId": "600"
+  },
+  {
+    "categoryId": "700-7600-0000",
+    "name": "Автозаправки",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7851",
+    "name": "Автопрокат",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "800-8500-0000",
+    "name": "Автостоянки",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7000",
+    "name": "Банки",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7010",
+    "name": "Банкоматы",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7400",
+    "name": "Бытовые услуги",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7200",
+    "name": "Коммерческие услуги",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7450",
+    "name": "Почта",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7600-0322",
+    "name": "Пункты зарядки электромобилей",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "700-7850",
+    "name": "Ремонт и обслуживание автомобилей",
+    "group": "services",
+    "groupId": "700"
+  },
+  {
+    "categoryId": "800-8300",
+    "name": "Библиотеки",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8000",
+    "name": "Больницы",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8100",
+    "name": "Государственные и общественные учреждения",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8700-0166",
+    "name": "Кладбища",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8200",
+    "name": "Образовательные учреждения",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "700-7300-0111",
+    "name": "Отделения полиции",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "700-7300-0113",
+    "name": "Пожарная часть",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "700-7300-0280",
+    "name": "Скорая помощь",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8600",
+    "name": "Спортивные заведения",
+    "group": "facilities",
+    "groupId": "800"
+  },
+  {
+    "categoryId": "800-8400",
+    "name": "Ярмарки",
+    "group": "facilities",
+    "groupId": "800"
+  }
+]
