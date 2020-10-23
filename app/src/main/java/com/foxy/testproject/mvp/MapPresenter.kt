@@ -2,8 +2,10 @@ package com.foxy.testproject.mvp
 
 import android.location.Location
 import android.util.Log
+import android.view.View
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.PlaceMetadata
+import com.foxy.testproject.R
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
 import com.foxy.testproject.data.ICategoriesRepository.CategoriesLoaded
@@ -41,9 +43,12 @@ class MapPresenter(
     }
 
     fun closeDialog(type: DialogType) {
-        when(type) {
+        when (type) {
             DialogType.CATEGORIES -> viewState.hideCategoriesDialog()
-            DialogType.GPS -> viewState.hideGpsInfoDialog()
+            DialogType.GPS -> {
+                viewState.hideGpsInfoDialog()
+                viewState.updateToolbar(View.GONE, R.string.app_name)
+            }
             else -> viewState.hideMarkerDetails()
         }
     }
@@ -83,6 +88,7 @@ class MapPresenter(
     fun enableGps() {
         viewState.openGpsSettings()
         viewState.hideGpsInfoDialog()
+        viewState.updateToolbar(View.VISIBLE, R.string.toolbar_title)
     }
 
     fun locate(isGpsEnabled: Boolean) {
@@ -98,6 +104,8 @@ class MapPresenter(
             currentCoordinates = GeoCoordinates(location.latitude, location.longitude)
             currentZoomLevel = DEFAULT_ZOOM_LEVEL
             viewState.updateMap(currentCoordinates, currentZoomLevel)
+            viewState.updateToolbar(View.GONE, R.string.app_name)
+            createMapCircle(currentCoordinates)
         }
     }
 
@@ -128,13 +136,6 @@ class MapPresenter(
     fun onMapSceneInitializationCompleted(errorCode: MapScene.ErrorCode?) {
         if (errorCode == null) {
             viewState.updateMap(currentCoordinates, currentZoomLevel)
-            val newCircle = createMapCircle(currentCoordinates, DEFAULT_RADIUS)
-            if (this::circle.isInitialized) {
-                viewState.updateMapCircle(circle, newCircle)
-            } else {
-                viewState.updateMapCircle(newCircle, newCircle)
-            }
-            circle = newCircle
         } else {
             viewState.showError(errorCode)
         }
@@ -157,11 +158,18 @@ class MapPresenter(
         }
     }
 
-    private fun createMapCircle(coordinates: GeoCoordinates, radius: Float): MapCircle {
+    private fun createMapCircle(coordinates: GeoCoordinates, radius: Float = DEFAULT_RADIUS) {
         val geoCircle = GeoCircle(coordinates, radius)
         val circleStyle =
             MapCircleStyle().apply { setStrokeColor(0x00908AA0, PixelFormat.RGBA_8888) }
-        return MapCircle(geoCircle, circleStyle)
+        val newCircle = MapCircle(geoCircle, circleStyle)
+
+        if (this::circle.isInitialized) {
+            viewState.updateMapCircle(circle, newCircle)
+        } else {
+            viewState.updateMapCircle(newCircle, newCircle)
+        }
+        circle = newCircle
     }
 
     private fun createMarker(place: Place): MapMarker {

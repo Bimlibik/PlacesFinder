@@ -11,4 +11,5 @@
     <string name="btn_gps_enable">Включить</string>
     <string name="btn_undo">Отмена</string>
     <string name="dialog_msg_gps">Для определения местоположения необходимо включить GPS.</string>
+    <string name="toolbar_title">Определение местоположения…</string>
 </resources>

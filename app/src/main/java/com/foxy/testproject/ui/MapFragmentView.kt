@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.foxy.testproject.GlobalCategories
 import com.foxy.testproject.PlatformPositioningProvider
 import com.foxy.testproject.R
@@ -48,6 +49,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         super.onViewCreated(view, savedInstanceState)
 
         platformPositioningProvider = PlatformPositioningProvider(requireContext())
+        setupToolbar()
         setHasOptionsMenu(true)
         createMapView(savedInstanceState)
         initSearchButtons()
@@ -190,6 +192,12 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         btn_clear.visibility = View.GONE
     }
 
+    override fun updateToolbar(progressVisibility: Int, title: Int) {
+        progress.visibility = progressVisibility
+        toolbar_title.text = getString(title)
+        Log.i("TAG2", "updateToolbar: ${getString(title)}")
+    }
+
     private fun setTapGestureHandler() {
         mapView.gestures.tapListener = TapListener { touchPoint ->
             Log.i("TAG3", "setTapGestureHandler: ")
@@ -273,6 +281,13 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         mapView = requireActivity().findViewById(R.id.map_view)
         mapView.onCreate(savedInstanceState)
         initMapScene()
+    }
+
+    private fun setupToolbar() {
+        if (activity is AppCompatActivity) {
+            (activity as AppCompatActivity).setSupportActionBar(toolbar)
+            (activity as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false)
+        }
     }
 
 

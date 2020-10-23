@@ -44,4 +44,6 @@ interface MapView : MvpView {
     fun showQuery(query: String)
 
     fun clearQuery()
+
+    fun updateToolbar(progressVisibility: Int, title: Int)
 }
