@@ -20,6 +20,8 @@ interface MapView : MvpView {
 
     fun startLocating()
 
+    fun showCurrentLocation(oldDot: MapMarker, newDot: MapMarker)
+
     fun openGpsInfoDialog()
 
     fun hideGpsInfoDialog()

@@ -110,6 +110,14 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         })
     }
 
+    override fun showCurrentLocation(oldDot: MapMarker, newDot: MapMarker) {
+        val img = MapImageFactory.fromResource(resources, R.drawable.green_dot)
+        val style = MapMarkerImageStyle()
+        newDot.addImage(img, style)
+        mapView.mapScene.removeMapMarker(oldDot)
+        mapView.mapScene.addMapMarker(newDot)
+    }
+
     override fun openGpsInfoDialog() {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setMessage(getString(R.string.dialog_msg_gps))

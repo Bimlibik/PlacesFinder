@@ -35,6 +35,7 @@ class MapPresenter(
         .apply { emptyList<MapMarker>() }
 
     private lateinit var circle: MapCircle
+    private lateinit var currentDot: MapMarker
 
     override fun onFirstViewAttach() {
         super.onFirstViewAttach()
@@ -105,6 +106,7 @@ class MapPresenter(
             currentZoomLevel = DEFAULT_ZOOM_LEVEL
             viewState.updateMap(currentCoordinates, currentZoomLevel)
             viewState.updateToolbar(View.GONE, R.string.app_name)
+            createDot(currentCoordinates)
             createMapCircle(currentCoordinates)
         }
     }
@@ -156,6 +158,16 @@ class MapPresenter(
             }
             viewState.addMarkersToMap(mapObjects)
         }
+    }
+
+    private fun createDot(coordinates: GeoCoordinates) {
+        val newDot = MapMarker(coordinates)
+        if (this::currentDot.isInitialized) {
+            viewState.showCurrentLocation(currentDot, newDot)
+        } else {
+            viewState.showCurrentLocation(newDot, newDot)
+        }
+        currentDot = newDot
     }
 
     private fun createMapCircle(coordinates: GeoCoordinates, radius: Float = DEFAULT_RADIUS) {
