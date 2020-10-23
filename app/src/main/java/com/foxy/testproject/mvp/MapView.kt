@@ -33,13 +33,9 @@ interface MapView : MvpView {
 
     fun removeMarkers(mapObjects: List<MapMarker>)
 
-    fun openCategoriesDialog(title: String, result: List<Category>, titles: List<String>)
+    fun openCategoriesDialog(title: String, categories: List<Category>, titles: List<String>)
 
     fun hideCategoriesDialog()
-
-    fun showMarkerDetails()
-
-    fun hideMarkerDetails()
 
     fun showError(errorCode: MapScene.ErrorCode)
 

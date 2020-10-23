@@ -4,7 +4,6 @@ import android.location.Location
 import android.util.Log
 import android.view.View
 import com.foxy.testproject.GlobalCategories
-import com.foxy.testproject.PlaceMetadata
 import com.foxy.testproject.R
 import com.foxy.testproject.data.Category
 import com.foxy.testproject.data.ICategoriesRepository
@@ -13,7 +12,6 @@ import com.foxy.testproject.utils.DialogType
 import com.here.sdk.core.GeoCircle
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.LanguageCode
-import com.here.sdk.core.Metadata
 import com.here.sdk.mapviewlite.*
 import com.here.sdk.search.*
 import moxy.InjectViewState
@@ -50,16 +48,7 @@ class MapPresenter(
                 viewState.hideGpsInfoDialog()
                 viewState.updateToolbar(View.GONE, R.string.app_name)
             }
-            else -> viewState.hideMarkerDetails()
         }
-    }
-
-    fun showDetails(pickMapItemsResult: PickMapItemsResult?) {
-        if (pickMapItemsResult == null) return
-
-        val topmostMarker = pickMapItemsResult.topmostMarker ?: return
-        val metadata = topmostMarker.metadata
-        viewState.showMarkerDetails()
     }
 
     fun clear() {
@@ -67,8 +56,32 @@ class MapPresenter(
         viewState.clearQuery()
     }
 
+    fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
+        clearMap()
+        val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
+        val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+        searchEngine.search(categoryQuery, searchOptions) { error, result ->
+            computeResult(error, result)
+        }
+
+        viewState.hideCategoriesDialog()
+        viewState.showQuery(query.name)
+    }
+
+    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinates) {
+        if (query.isNotEmpty()) {
+            clearMap()
+            val textQuery = TextQuery(query, geoCoordinate)
+            val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
+            searchEngine.search(textQuery, searchOptions) { error, result ->
+                computeResult(error, result)
+            }
+            viewState.showQuery(query)
+        }
+    }
+
     fun showMoreCategories(globalCategory: GlobalCategories, title: String) {
-        val groupCategories = mutableListOf<Category>()
+        val groupCategories = arrayListOf<Category>()
         val titles = arrayListOf<String>()
         for (category in categories) {
             if (category.groupId == globalCategory.id) {
@@ -111,30 +124,6 @@ class MapPresenter(
         }
     }
 
-    fun searchByCategory(query: Category, geoCoordinate: GeoCoordinates) {
-        clearMap()
-        val categoryQuery = CategoryQuery(PlaceCategory(query.categoryId), geoCoordinate)
-        val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
-        searchEngine.search(categoryQuery, searchOptions) { error, result ->
-            computeResult(error, result)
-        }
-
-        viewState.hideCategoriesDialog()
-        viewState.showQuery(query.name)
-    }
-
-    fun searchByKeyword(query: String, geoCoordinate: GeoCoordinates) {
-        if (query.isNotEmpty()) {
-            clearMap()
-            val textQuery = TextQuery(query, geoCoordinate)
-            val searchOptions = SearchOptions(LanguageCode.RU_RU, MAX_SEARCH_RESULT)
-            searchEngine.search(textQuery, searchOptions) { error, result ->
-                computeResult(error, result)
-            }
-            viewState.showQuery(query)
-        }
-    }
-
     fun onMapSceneInitializationCompleted(errorCode: MapScene.ErrorCode?) {
         if (errorCode == null) {
             viewState.updateMap(currentCoordinates, currentZoomLevel)
@@ -145,16 +134,15 @@ class MapPresenter(
 
     private fun computeResult(searchError: SearchError?, result: MutableList<Place>?) {
         if (searchError != null) {
-            Log.i("TAG2", "computeResult: Search Error: $searchError")
+            Log.i(TAG, "computeResult: Search Error: $searchError")
             return
         }
 
         if (result != null && result.isNotEmpty()) {
             for (place in result) {
                 place.geoCoordinates?.let {
-                    mapObjects.add(createMarker(place))
+                    mapObjects.add(createMarker(it))
                 }
-                Log.i("Place", "Place: title - ${place.title}")
             }
             viewState.addMarkersToMap(mapObjects)
         }
@@ -184,12 +172,8 @@ class MapPresenter(
         circle = newCircle
     }
 
-    private fun createMarker(place: Place): MapMarker {
-        val metaData = Metadata()
-        metaData.setCustomValue("poi", PlaceMetadata(place))
-        val mapObject = MapMarker(place.geoCoordinates!!)
-        mapObject.metadata = metaData
-        return mapObject
+    private fun createMarker(geoCoordinate: GeoCoordinates): MapMarker {
+        return MapMarker(geoCoordinate)
     }
 
     private fun clearMap() {
@@ -214,6 +198,7 @@ class MapPresenter(
 
 }
 
+private const val TAG = "MapPresenter"
 private const val DEFAULT_ZOOM_LEVEL = 15.0
 private const val DEFAULT_RADIUS = 500f
 private const val MAX_SEARCH_RESULT = 30

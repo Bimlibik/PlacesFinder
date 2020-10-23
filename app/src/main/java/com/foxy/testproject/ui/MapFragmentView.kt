@@ -5,7 +5,6 @@ import android.content.Intent
 import android.location.Location
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -18,8 +17,6 @@ import com.foxy.testproject.mvp.MapView
 import com.foxy.testproject.utils.DialogType
 import com.foxy.testproject.utils.InjectorUtils
 import com.here.sdk.core.GeoCoordinates
-import com.here.sdk.core.Point2D
-import com.here.sdk.gestures.TapListener
 import com.here.sdk.mapviewlite.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import moxy.MvpAppCompatFragment
@@ -37,7 +34,7 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
 
     @ProvidePresenter
     fun providePresenter(): MapPresenter =
-         MapPresenter(InjectorUtils.getCategoriesRepository())
+        MapPresenter(InjectorUtils.getCategoriesRepository())
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -53,7 +50,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         setHasOptionsMenu(true)
         createMapView(savedInstanceState)
         initSearchButtons()
-        setTapGestureHandler()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -123,7 +119,11 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
             setMessage(getString(R.string.dialog_msg_gps))
             setCancelable(false)
             setPositiveButton(getString(R.string.btn_gps_enable)) { _, _ -> presenter.enableGps() }
-            setNegativeButton(getString(R.string.btn_undo)) { _, _ -> presenter.closeDialog(DialogType.GPS) }
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ ->
+                presenter.closeDialog(
+                    DialogType.GPS
+                )
+            }
             create()
         }.show()
     }
@@ -151,34 +151,26 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
         }
     }
 
-    override fun showMarkerDetails() {
-        dialog = AlertDialog.Builder(requireContext()).apply {
-            setTitle("title")
-            setMessage("msg")
-            setOnCancelListener { presenter.closeDialog(DialogType.MARKER) }
-            create()
-        }.show()
-    }
-
-    override fun hideMarkerDetails() {
-        dialog.dismiss()
-    }
-
     override fun showError(errorCode: MapScene.ErrorCode) {
         Toast.makeText(requireContext(), "Error $errorCode", Toast.LENGTH_LONG).show()
     }
 
-    override fun openCategoriesDialog(title: String, categories: List<Category>, titles: List<String>) {
+    override fun openCategoriesDialog(
+        title: String,
+        categories: List<Category>,
+        titles: List<String>
+    ) {
         dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle(title)
             setItems(titles.toTypedArray()) { _, which ->
-                presenter.searchByCategory(
-                    categories[which],
-                    mapView.camera.target
-                )
+                presenter.searchByCategory(categories[which], mapView.camera.target)
             }
             setCancelable(false)
-            setNegativeButton(getString(R.string.btn_undo)) { _, _ -> presenter.closeDialog(DialogType.CATEGORIES) }
+            setNegativeButton(getString(R.string.btn_undo)) { _, _ ->
+                presenter.closeDialog(
+                    DialogType.CATEGORIES
+                )
+            }
             create()
         }.show()
     }
@@ -203,21 +195,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
     override fun updateToolbar(progressVisibility: Int, title: Int) {
         progress.visibility = progressVisibility
         toolbar_title.text = getString(title)
-        Log.i("TAG2", "updateToolbar: ${getString(title)}")
-    }
-
-    private fun setTapGestureHandler() {
-        mapView.gestures.tapListener = TapListener { touchPoint ->
-            Log.i("TAG3", "setTapGestureHandler: ")
-            pickMapMarker(touchPoint)
-        }
-    }
-
-    private fun pickMapMarker(touchPoint: Point2D) {
-        val radiusInPixel = 1.0
-        mapView.pickMapItems(touchPoint, radiusInPixel) { pickMapItemsResult ->
-            presenter.showDetails(pickMapItemsResult)
-        }
     }
 
     private fun initSearchButtons() {
@@ -297,7 +274,6 @@ class MapFragmentView : MvpAppCompatFragment(), MapView {
             (activity as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false)
         }
     }
-
 
 
 }
