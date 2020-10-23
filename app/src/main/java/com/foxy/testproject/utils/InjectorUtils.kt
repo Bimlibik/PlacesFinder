@@ -11,7 +11,7 @@ object InjectorUtils {
     fun getCategoriesRepository(): ICategoriesRepository =
         CategoriesRepository.getInstance(getDatabase().categoryDao(), getExecutors())
 
-    fun getDatabase(): TestProjectDb = TestProjectDb.getInstance(
+    private fun getDatabase(): TestProjectDb = TestProjectDb.getInstance(
         TestProjectApp.get(),
         getExecutors()
     )

@@ -1,7 +1,6 @@
 package com.foxy.testproject
 
 import android.app.Application
-import com.foxy.testproject.data.TestProjectDb
 
 class TestProjectApp : Application() {
 

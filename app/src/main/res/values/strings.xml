@@ -12,4 +12,8 @@
     <string name="btn_undo">Отмена</string>
     <string name="dialog_msg_gps">Для определения местоположения необходимо включить GPS.</string>
     <string name="toolbar_title">Определение местоположения…</string>
+    <string name="content_description_img_drag">Скрыть или показать панель категорий</string>
+    <string name="content_description_img_search">Поиск</string>
+    <string name="content_description_img_clear">Очистить</string>
+    <string name="menu_item_locate">Местоположение</string>
 </resources>
